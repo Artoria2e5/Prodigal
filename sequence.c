@@ -373,14 +373,6 @@ int *calc_most_gc_frame(unsigned char *seq, int slen) {
   return gp;
 }
 
-
-/* Converts a word of size len to a number */
-int mer_ndx(int len, unsigned char *seq, int pos) {
-  int i, ndx = 0;
-  for(i = 0; i < 2*len; i++) ndx |= (test(seq, pos*2+i)<<i);
-  return ndx;
-}
-
 /* Gives a text string for a start */
 void start_text(char *st, int type) {
   if(type == 0) st[0] = 'A';
@@ -567,10 +559,4 @@ int shine_dalgarno_mm(unsigned char *seq, int pos, int start, double *rwt) {
   }
 
   return max_val;
-}
-
-/* Returns the minimum of two numbers */
-int imin(int x, int y) {
-  if(x < y) return x;
-  return y;
 }

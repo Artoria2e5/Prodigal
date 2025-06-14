@@ -28,6 +28,7 @@
 #include "bitmap.h"
 #include "training.h"
 #include "fptr.h"
+#include "table.h"
 
 #define MAX_SEQ 32000000
 #define MAX_LINE 10000
@@ -63,40 +64,29 @@ int max_fr(int, int, int);
 
 int *calc_most_gc_frame(unsigned char *, int);
 
-int mer_ndx(int, unsigned char *, int);
 void mer_text(char *, int, int);
 void calc_mer_bg(int, unsigned char *, unsigned char *, int, double *);
 
 int shine_dalgarno_exact(unsigned char *, int, int, double *);
 int shine_dalgarno_mm(unsigned char *, int, int, double *);
 
-int imin(int, int);
-
 /*** START INLINE ROUTINES (THOSE TOO SIMPLE TO NOT INLINE) */
 /* Simple routines to say whether or not bases are */
 /* a, c, t, g, starts, stops, etc. */
 inline static int is_a(unsigned char *seq, int n) {
-  int ndx = n*2;
-  if(test(seq, ndx) == 1 || test(seq, ndx+1) == 1) return 0;
-  return 1;
+  return nuc(seq, n) == P_A;
 }
 
 inline static int is_c(unsigned char *seq, int n) {
-  int ndx = n*2;
-  if(test(seq, ndx) == 1 || test(seq, ndx+1) == 0) return 0;
-  return 1;
+  return nuc(seq, n) == P_C;
 }
 
 inline static int is_g(unsigned char *seq, int n) {
-  int ndx = n*2;
-  if(test(seq, ndx) == 0 || test(seq, ndx+1) == 1) return 0;
-  return 1;
+  return nuc(seq, n) == P_G;
 }
 
 inline static int is_t(unsigned char *seq, int n) {
-  int ndx = n*2;
-  if(test(seq, ndx) == 0 || test(seq, ndx+1) == 0) return 0;
-  return 1;
+  return nuc(seq, n) == P_T;
 }
 
 inline static int is_n(unsigned char *useq, int n) {
@@ -105,13 +95,13 @@ inline static int is_n(unsigned char *useq, int n) {
 }
 
 inline static int is_stop(unsigned char *seq, int n, struct _training *tinf) {
-  unsigned char codon = trinuc(seq, n*2);
+  unsigned char codon = trinuc(seq, n);
   /* We will worry about "might be a stop or not" at a later date. */
   return (tinf->table[codon] == '*') || !!(tinf->table[codon] & 0x80);
 }
 
 inline static int is_start(unsigned char *seq, int n, struct _training *tinf) {
-  unsigned char codon = trinuc(seq, n*2);
+  unsigned char codon = trinuc(seq, n);
   return (tinf->table[codon] | 0x20) && (tinf->table[codon] != '*');
 }
 
@@ -142,6 +132,19 @@ inline static char amino(unsigned char *seq, int n, struct _training *tinf, int 
   if(is_stop(seq, n, tinf)) return '*';
   if(is_start(seq, n, tinf) && is_init) return 'M';
   return (tinf->table[codon] & (~0xA0));
+}
+
+/* Converts a word of size len to a number (opposite bit-order of trinuc!) */
+inline static int mer_ndx(int len, unsigned char *seq, int pos) {
+  int i, ndx = 0;
+  for(i = 0; i < 2*len; i++) ndx |= (test(seq, pos*2+i)<<i);
+  return ndx;
+}
+
+/* Returns the minimum of two numbers */
+inline static int imin(int x, int y) {
+  if(x < y) return x;
+  return y;
 }
 
 #endif

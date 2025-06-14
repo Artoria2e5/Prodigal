@@ -41,10 +41,30 @@ static inline void toggle(unsigned char *bm, int ndx) {
   bm[ndx>>3] ^= (1 << (ndx&0x07)); 
 }
 
-/* Get six bits */
+/* Get two bits */
+static inline unsigned char nuc(unsigned char *bm, int ndx) {
+  ndx *= 2;
+  return ((bm[ndx >> 3] >> (ndx & 0x07)) & 0x03);
+}
+
+/* Get six bits, which can be in two bytes
+   out-of-bound read may happen but will not affect result */
 static inline unsigned char trinuc(unsigned char *bm, int ndx) {
+  ndx *= 2;
   unsigned byte = ndx >> 3;
   unsigned stretch = (bm[byte + 1] << 8) | bm[byte];
+  return ((stretch >> (ndx & 0x07)) & 0x3F);
+}
+
+/* Get twelve bits, which can be in four bytes
+   mer_ndx(6) is relatively common and should be replaced with this
+   (shorter assembly).  unfortunately the order is different, which
+   breaks tinf->gene_dc compatibility! */
+static inline unsigned char hexnuc(unsigned char *bm, int ndx) {
+  ndx *= 2;
+  unsigned byte = ndx >> 3;
+  unsigned stretch = (bm[byte + 3] << 24) | (bm[byte + 2] << 16) |
+                     (bm[byte + 1] << 8) | bm[byte];
   return ((stretch >> (ndx & 0x07)) & 0x3F);
 }
 #endif
