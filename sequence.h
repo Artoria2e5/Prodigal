@@ -53,22 +53,8 @@ void rcom_seq(unsigned char *, unsigned char *, unsigned char *, int);
 
 void calc_short_header(char *header, char *short_header, int);
 
-int is_a(unsigned char *, int);
-int is_c(unsigned char *, int);
-int is_g(unsigned char *, int);
-int is_t(unsigned char *, int);
-int is_n(unsigned char *, int);
-int is_gc(unsigned char *, int);
-
-int is_stop(unsigned char *, int, struct _training *);
-int is_start(unsigned char *, int, struct _training *);
-int is_atg(unsigned char *, int);
-int is_gtg(unsigned char *, int);
-int is_ttg(unsigned char *, int);
-
 double gc_content(unsigned char *, int, int);
 
-char amino(unsigned char *, int, struct _training *, int);
 int amino_num(char);
 char amino_letter(int);
 
@@ -85,5 +71,77 @@ int shine_dalgarno_exact(unsigned char *, int, int, double *);
 int shine_dalgarno_mm(unsigned char *, int, int, double *);
 
 int imin(int, int);
+
+/*** START INLINE ROUTINES (THOSE TOO SIMPLE TO NOT INLINE) */
+/* Simple routines to say whether or not bases are */
+/* a, c, t, g, starts, stops, etc. */
+inline static int is_a(unsigned char *seq, int n) {
+  int ndx = n*2;
+  if(test(seq, ndx) == 1 || test(seq, ndx+1) == 1) return 0;
+  return 1;
+}
+
+inline static int is_c(unsigned char *seq, int n) {
+  int ndx = n*2;
+  if(test(seq, ndx) == 1 || test(seq, ndx+1) == 0) return 0;
+  return 1;
+}
+
+inline static int is_g(unsigned char *seq, int n) {
+  int ndx = n*2;
+  if(test(seq, ndx) == 0 || test(seq, ndx+1) == 1) return 0;
+  return 1;
+}
+
+inline static int is_t(unsigned char *seq, int n) {
+  int ndx = n*2;
+  if(test(seq, ndx) == 0 || test(seq, ndx+1) == 0) return 0;
+  return 1;
+}
+
+inline static int is_n(unsigned char *useq, int n) {
+  if(test(useq, n) == 0) return 0;
+  return 1;
+}
+
+inline static int is_stop(unsigned char *seq, int n, struct _training *tinf) {
+  unsigned char codon = trinuc(seq, n*2);
+  /* We will worry about "might be a stop or not" at a later date. */
+  return (tinf->table[codon] == '*') || !!(tinf->table[codon] & 0x80);
+}
+
+inline static int is_start(unsigned char *seq, int n, struct _training *tinf) {
+  unsigned char codon = trinuc(seq, n*2);
+  return (tinf->table[codon] | 0x20) && (tinf->table[codon] != '*');
+}
+
+inline static int is_atg(unsigned char *seq, int n) {
+  if(is_a(seq, n) == 0 || is_t(seq, n+1) == 0 || is_g(seq, n+2) == 0) return 0;
+  return 1;
+}
+
+inline static int is_gtg(unsigned char *seq, int n) {
+  if(is_g(seq, n) == 0 || is_t(seq, n+1) == 0 || is_g(seq, n+2) == 0) return 0;
+  return 1;
+}
+
+inline static int is_ttg(unsigned char *seq, int n) {
+  if(is_t(seq, n) == 0 || is_t(seq, n+1) == 0 || is_g(seq, n+2) == 0) return 0;
+  return 1;
+}
+
+inline static int is_gc(unsigned char *seq, int n) {
+  int ndx = n*2;
+  if(test(seq, ndx) != test(seq, ndx+1)) return 1;
+  return 0;
+}
+
+/* Returns a single amino acid for this position */
+inline static char amino(unsigned char *seq, int n, struct _training *tinf, int is_init) {
+  unsigned char codon = trinuc(seq, n*2);
+  if(is_stop(seq, n, tinf)) return '*';
+  if(is_start(seq, n, tinf) && is_init) return 'M';
+  return (tinf->table[codon] & (~0xA0));
+}
 
 #endif
