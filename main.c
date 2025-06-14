@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
         tinf.trans_table = atoi(argv[i+1]);
         if (id_to_table(tinf.table, tinf.trans_table))
           usage("Invalid translation table numeric specified (should be "
-          "between 0 and 33, inclusive)");
+          "between 0 and " STRMAXTABLE ", inclusive)");
         user_tt = tinf.trans_table;
       } else {
         /* LUMP-OF-STRING PATH */

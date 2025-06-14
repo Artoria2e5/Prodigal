@@ -290,7 +290,7 @@ const char predefined_tables[34][2][65] = {
 };
 
 int id_to_table(char out[64], int id) {
-  if (id < 0 || id >= 34) {
+  if (id < 0 || id > MAXTABLE) {
     return -1;
   }
   eaa_to_table(out, predefined_tables[id][0], predefined_tables[id][1]);
@@ -309,7 +309,7 @@ int sncbieaacmp(const char a[65], const char b[65]) {
 int table_to_id(const char table[64]) {
   char ncbieaa[65], sncbieaa[65];
   table_to_eaa(table, ncbieaa, sncbieaa);
-  for (int i = 0; i < 34; i++) {
+  for (int i = 0; i <= MAXTABLE; i++) {
     if (strcmp(ncbieaa, predefined_tables[i][0]) == 0 &&
         sncbieaacmp(sncbieaa, predefined_tables[i][1]) == 0) {
       return i;
