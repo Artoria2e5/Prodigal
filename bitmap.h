@@ -41,4 +41,10 @@ static inline void toggle(unsigned char *bm, int ndx) {
   bm[ndx>>3] ^= (1 << (ndx&0x07)); 
 }
 
+/* Get six bits */
+static inline unsigned char trinuc(unsigned char *bm, int ndx) {
+  unsigned byte = ndx >> 3;
+  unsigned stretch = (bm[byte + 1] << 8) | bm[byte];
+  return ((stretch >> (ndx & 0x07)) & 0x3F);
+}
 #endif
