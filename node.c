@@ -19,6 +19,7 @@
 *******************************************************************************/
 
 #include "node.h"
+#include "table.h"
 
 /*******************************************************************************
   Adds nodes to the node list.  Genes must be >=90bp in length, unless they
@@ -572,7 +573,8 @@ void raw_coding_score(unsigned char *seq, unsigned char *rseq, int slen, struct
   int i, j, last[3], fr;
   double score[3], lfac, no_stop, gsize = 0.0;
 
-  if(tinf->trans_table != 11) { /* TGA or TAG is not a stop */
+  /* FIXME: There's probably a way to consider the other stops too */
+  if(tinf->table[P_TGA] != '*' || tinf->table[P_TAG] != '*') { /* TGA or TAG is not a stop */
     no_stop = ((1-tinf->gc)*(1-tinf->gc)*tinf->gc)/8.0;
     no_stop += ((1-tinf->gc)*(1-tinf->gc)*(1-tinf->gc))/8.0;
     no_stop = (1 - no_stop);
