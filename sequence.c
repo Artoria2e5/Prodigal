@@ -518,6 +518,8 @@ int amino_num(char aa) {
   if(aa == 'v' || aa == 'V') return 17;
   if(aa == 'w' || aa == 'W') return 18;
   if(aa == 'y' || aa == 'Y') return 19;
+  if(aa == 'u' || aa == 'U') return 20;
+  if(aa == 'o' || aa == 'O') return 21;
   return -1;
 }
 
@@ -543,6 +545,8 @@ char amino_letter(int num) {
   if(num == 17) return 'V';
   if(num == 18) return 'W';
   if(num == 19) return 'Y';
+  if(num == 20) return 'U';
+  if(num == 21) return 'O';
   return 'X';
 }
 
