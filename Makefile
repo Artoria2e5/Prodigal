@@ -38,6 +38,10 @@ all: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
 
+# Too big to recompile on every header change
+training.o: training.c training.h table.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
