@@ -48,4 +48,6 @@ int table_to_id(const char[64]);
 
 /* Variant for handling user input, which is potentially malformed */
 int cmdline_eaa_to_table(char[64], const char[130]);
+
+extern const char predefined_tables[MAXTABLE+1][2][65];
 #endif

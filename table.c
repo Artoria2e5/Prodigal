@@ -89,7 +89,7 @@ void eaa_to_table(char out[64], const char ncbieaa[65], const char sncbieaa[65])
        from sncbieaa in bits. */
     if (sncbieaa[i] == '*' && ncbieaa[i] != '*')
         temp_table[i] |= 0x80; /* Only set the special bit for optional stops */
-    else if (sncbieaa_get(sncbieaa, i) != '-')
+    else if (sncbieaa[i] != '-')
         temp_table[i] |= 0x20; 
 
     out[(unsigned) ncbi_to_trinuc[i]] = temp_table[i];
@@ -113,10 +113,9 @@ void table_to_eaa(const char table[64], char ncbieaa[65], char sncbieaa[65]) {
 }
 
 /* Part 2. Predefined tables, which is a mix of NCBI and other data.
-   Someday there will be a script to do this automatically from gc.prt
     */
 const char predefined_tables[34][2][65] = {
-  /* 0. Unused, fill with Veronika Kivenson "34" (11 + Pyl) */
+  /* 0. (NON-NCBI) 11 + Pyl (Kivenson et al. 2021) */
   {
     "FFLLSSSSYY*OCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "---M------*---*----M---------------M----------------------------"
@@ -126,152 +125,152 @@ const char predefined_tables[34][2][65] = {
     "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "---M------**--*----M---------------M----------------------------"
   },
-  /* 2. Vertebrate Mito */
+  /* 2. Vertebrate Mitochondrial */
   {
     "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSS**VVVVAAAADDEEGGGG",
-    "----------**--------------------MMMM----------**---M------------"
+    "----------**-----------------------M----------**----------------"
   },
-  /* 3. Yeast Mito */
+  /* 3. Yeast Mitochondrial */
   {
     "FFLLSSSSYY**CCWWTTTTPPPPHHQQRRRRIIMMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
-    "----------**----------------------MM---------------M------------",
+    "----------**-----------------------M----------------------------"
   },
-  /* 4. Mold Mito; Protozoan Mito; Coelenterate Mito; Mycoplasma; Spiroplasma */
+  /* 4. Mold Mitochondrial; Protozoan Mitochondrial; Coelenterate Mitochondrial; Mycoplasma; Spiroplasma */
   {
     "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
-    "--MM------**-------M------------MMMM---------------M------------"
+    "---M------**-------M---------------M----------------------------"
   },
-  /* 5. Invertebrate Mito */
+  /* 5. Invertebrate Mitochondrial */
   {
     "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSSSVVVVAAAADDEEGGGG",
-    "---M------**--------------------MMMM---------------M------------"
+    "---M------**-----------------------M----------------------------"
   },
-  /* 6. Ciliate Nuc; Dasycladacean Nuc; Hexamita Nuc */
+  /* 6. Ciliate Nuclear; Dasycladacean Nuclear; Hexamita Nuclear */
   {
     "FFLLSSSSYYQQCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "--------------*--------------------M----------------------------"
   },
-  /* 7. Unused, fill with 11 + Sec for fun (SECIS says otherwise) */
+  /* 7. (NON-NCBI) 11 + Sec (toy example, biologically meaningless due to SECIS) */
   {
     "FFLLSSSSYY**CCUWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "---M------**-------M---------------M----------------------------"
   },
-  /* 8. Unused, fill with 11 + Sec + Pyl for fun */
+  /* 8. (NON-NCBI) 11 + Pyl + Sec (toy example,  biologically meaningless due to SECIS) */
   {
     "FFLLSSSSYY*OCCUWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "---M------*--------M---------------M----------------------------"
   },
-  /* 9. Echinoderm Mito; Flatworm Mito */
+  /* 9. Echinoderm Mitochondrial; Flatworm Mitochondrial */
   {
     "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG",
-    "----------**-----------------------M---------------M------------"
+    "----------**-----------------------M----------------------------"
   },
-  /* 10. Euplotid Nuc */
+  /* 10. Euplotid Nuclear */
   {
     "FFLLSSSSYY**CCCWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "----------**-----------------------M----------------------------"
   },
-  /* 11. Bacterial, Archaeal and Plant Plastid (OUR DEFAULT) */
+  /* 11. Bacterial, Archaeal and Plant Plastid */
   {
     "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "---M------**--*----M---------------M----------------------------"
   },
-  /* 12. Alt Yeast Nuc */
+  /* 12. Alternative Yeast Nuclear */
   {
     "FFLLSSSSYY**CC*WLLLSPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "----------**--*----M---------------M----------------------------"
   },
-  /* 13. Ascidian Mito */
+  /* 13. Ascidian Mitochondrial */
   {
     "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNKKSSGGVVVVAAAADDEEGGGG",
-    "---M------**----------------------MM---------------M------------"
+    "---M------**-----------------------M----------------------------"
   },
-  /* 14. Alt Flatworm Mito */
+  /* 14. Alternative Flatworm Mitochondrial */
   {
     "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNNKSSSSVVVVAAAADDEEGGGG",
     "-----------*-----------------------M----------------------------"
   },
-  /* 15. Blepharisma Macronuc */
+  /* 15. Blepharisma Macronuclear */
   {
     "FFLLSSSSYY*QCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "----------*---*--------------------M----------------------------"
   },
-  /* 16. Chlorophycean Mito */
+  /* 16. Chlorophycean Mitochondrial */
   {
     "FFLLSSSSYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "----------*---*--------------------M----------------------------"
   },
-  /* 17. Unused, fill with Eddy Enterosoma/UBA4682 */
+  /* 17. (NON-NCBI) Enterosoma/UBA4682 (Shulgina & Eddy 2021) */
   {
     "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRMVVVVAAAADDEEGGGG",
     "---M------**--*----M---------------M----------------------------"
   },
-  /* 18. Unused, fill with Eddy Peptacetobacter */
+  /* 18. (NON-NCBI) Peptacetobacter (Shulgina & Eddy 2021) */
   {
     "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRQIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "---M------**--*----M---------------M----------------------------"
   },
-  /* 19. Unused, fill with Eddy Anaerococcus, Onthovivens/UBA4855 */
+  /* 19. (NON-NCBI) Anaerococcus, Onthovivens/UBA4855 (Shulgina & Eddy 2021) */
   {
     "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRWIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "---M------**--*----M---------------M----------------------------"
   },
-  /* 20. Unused, fill with Eddy Absconditabacterales */
+  /* 20. (NON-NCBI) Absconditabacterales (Shulgina & Eddy 2021) */
   {
     "FFLLSSSSYY**CCGWLLLLPPPPHHQQRRWWIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
-    "---M------**-----------------------M---------------M------------"
+    "---M------**-----------------------M----------------------------"
   },
-  /* 21. Trematode Mito */
+  /* 21. Trematode Mitochondrial */
   {
     "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIMMTTTTNNNKSSSSVVVVAAAADDEEGGGG",
-    "----------**-----------------------M---------------M------------"
+    "----------**-----------------------M----------------------------"
   },
-  /* 22. Scenedesmus obliquus Mito */
+  /* 22. Scenedesmus obliquus Mitochondrial */
   {
     "FFLLSS*SYY*LCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "------*---*---*--------------------M----------------------------"
   },
-  /* 23. Thraustochytrium Mito */
+  /* 23. Thraustochytrium Mitochondrial */
   {
     "FF*LSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
-    "--*-------**--*-----------------M--M---------------M------------"
+    "--*-------**--*--------------------M----------------------------"
   },
-  /* 24. Rhabdopleuridae Mito */
+  /* 24. Rhabdopleuridae Mitochondrial */
   {
     "FFLLSSSSYY**CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG",
-    "---M------**-------M---------------M---------------M------------"
+    "---M------**-------M---------------M----------------------------"
   },
   /* 25. Candidate Division SR1 and Gracilibacteria */
   {
     "FFLLSSSSYY**CCGWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
-    "---M------**-----------------------M---------------M------------"
+    "---M------**-----------------------M----------------------------"
   },
-  /* 26. Pachysolen tannophilus Nuc */
+  /* 26. Pachysolen tannophilus Nuclear */
   {
     "FFLLSSSSYY**CC*WLLLAPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "----------**--*----M---------------M----------------------------"
   },
-  /* 27. Karyorelict Nuc */
+  /* 27. Karyorelict Nuclear */
   {
     "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "--------------*--------------------M----------------------------"
   },
-  /* 28. Condylostoma Nuc */
+  /* 28. Condylostoma Nuclear */
   {
     "FFLLSSSSYYQQCCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "----------**--*--------------------M----------------------------"
   },
-  /* 29. Mesodinium Nuc */
+  /* 29. Mesodinium Nuclear */
   {
     "FFLLSSSSYYYYCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "--------------*--------------------M----------------------------"
   },
-  /* 30. Peritrich Nuc */
+  /* 30. Peritrich Nuclear */
   {
     "FFLLSSSSYYEECC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "--------------*--------------------M----------------------------"
   },
-  /* 31. Blastocrithidia Nuc */
+  /* 31. Blastocrithidia Nuclear */
   {
     "FFLLSSSSYYEECCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "----------**-----------------------M----------------------------"
@@ -281,11 +280,11 @@ const char predefined_tables[34][2][65] = {
     "FFLLSSSSYY*WCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG",
     "---M------*---*----M---------------M----------------------------"
   },
-  /* 33. Cephalodiscidae Mito */
+  /* 33. Cephalodiscidae Mitochondrial */
   {
     "FFLLSSSSYYY*CCWWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSSKVVVVAAAADDEEGGGG",
-    "---M-------*-------M---------------M---------------M------------"
-  }
+    "---M-------*-------M---------------M----------------------------"
+  },
 };
 
 int id_to_table(char out[64], int id) {
@@ -296,21 +295,12 @@ int id_to_table(char out[64], int id) {
   return 0;
 }
 
-int sncbieaacmp(const char a[65], const char b[65]) {
-  for (int i = 0; i < 64; i++) {
-    if (sncbieaa_get(a, i) != sncbieaa_get(b, i)) {
-      return 1;
-    }
-  }
-  return 0;
-}
-
 int table_to_id(const char table[64]) {
   char ncbieaa[65], sncbieaa[65];
   table_to_eaa(table, ncbieaa, sncbieaa);
   for (int i = 0; i <= MAXTABLE; i++) {
     if (strcmp(ncbieaa, predefined_tables[i][0]) == 0 &&
-        sncbieaacmp(sncbieaa, predefined_tables[i][1]) == 0) {
+        strcmp(ncbieaa, predefined_tables[i][1]) == 0) {
       return i;
     }
   }
@@ -325,6 +315,7 @@ int cmdline_eaa_to_table(char table[64], const char input[130]) {
   int len = strlen(input);
   int input_is_table = 0;
   char ncbieaa[65], sncbieaa[65];
+  const char *inputs = NULL;
   if (len != 64 && len != 129) {
     return -1;
   }
@@ -351,12 +342,13 @@ int cmdline_eaa_to_table(char table[64], const char input[130]) {
       }
     }
   } else {
-    memcpy(sncbieaa, input + 65, 64);
-    sncbieaa[64] = '\0';
+    inputs = input + 64;
     for (int i = 0; i < 64; i++) {
-      if (strchr(salphabet, sncbieaa[i]) == NULL)
+      sncbieaa[i] = sncbieaa_get(inputs, i);
+      if (strchr(salphabet, inputs[i]) == NULL)
         return -3;
     }
+    sncbieaa[64] = '\0';
   }
 
   eaa_to_table(table, ncbieaa, sncbieaa);
@@ -385,7 +377,7 @@ int main(int argc, char *argv[]) {
     usage(argv[0]);
     return 1;
   }
-  char table[64], ncbieaa[65], sncbieaa[65];
+  char table[65], ncbieaa[65], sncbieaa[65];
   int ret;
   if (strcmp(argv[1], "ce2t") == 0) {
     if (ret = cmdline_eaa_to_table(table, argv[2])) {
@@ -397,7 +389,8 @@ int main(int argc, char *argv[]) {
     printf("%s,%s\n", ncbieaa, sncbieaa);
   } else if (strcmp(argv[1], "e2t") == 0) {
     eaa_to_table(table, argv[2], argv[3]);
-    printf("%.*s\n", 64, table);
+    table[64] = '\0';
+    puts(table);
   } else if (strcmp(argv[1], "t2e") == 0) {
     table_to_eaa(argv[2], ncbieaa, sncbieaa);
     printf("%s,%s\n", ncbieaa, sncbieaa);
