@@ -22,8 +22,7 @@
 *******************************************************************************/
 
 #include "table.h"
-#include <string.h> /* memcpy */
-#include <stdio.h>
+#include <string.h>
 
 /* Part 1. Convert the NCBI amino-acid order from/to trinuc() order. */
 /* 1.2 N_*: ncbi codon order: tt{t,c,a,g}, tc{t,c,a,g}, ... */
@@ -363,3 +362,59 @@ int cmdline_eaa_to_table(char table[64], const char input[130]) {
   eaa_to_table(table, ncbieaa, sncbieaa);
   return 0;
 }
+
+#ifdef TABLE_UTIL
+#include <stdio.h>
+#include <stdlib.h>
+
+void usage(char* a0) {
+  fprintf(stderr, "Usage: %s ce2t NCBIEAA[,SNCBIEAA]  "
+    "# parse -g NCBI\n", a0);
+  fprintf(stderr, "       %s e2t  NCBIEAA SNCBIEAA    "
+    "# parse ordinary NCBI\n", a0);
+  fprintf(stderr, "       %s t2e  TABLE  # table string to NCBI\n", a0);
+  fprintf(stderr, "       %s id2t ID     # id to table\n", a0);
+  fprintf(stderr, "       %s t2id TABLE  # table to id\n\n", a0);
+  fprintf(stderr, "WARNING: TABLE can contain 8-bit characters.  When using "
+    "under a UTF-8 environemnt,\n");
+  fprintf(stderr, "         wrap output in `| iconv -f utf8 -t latin1`"
+    " and input in `$(iconv -f utf8 -t latin1 <<< $'...')`.\n");
+}
+int main(int argc, char *argv[]) {
+  if (argc < 3) {
+    usage(argv[0]);
+    return 1;
+  }
+  char table[64], ncbieaa[65], sncbieaa[65];
+  int ret;
+  if (strcmp(argv[1], "ce2t") == 0) {
+    if (ret = cmdline_eaa_to_table(table, argv[2])) {
+      fprintf(stderr, "cmdline_eaa_to_table: %d\n", ret);
+      usage(argv[0]);
+      return 1;
+    }
+    table_to_eaa(table, ncbieaa, sncbieaa);
+    printf("%s,%s\n", ncbieaa, sncbieaa);
+  } else if (strcmp(argv[1], "e2t") == 0) {
+    eaa_to_table(table, argv[2], argv[3]);
+    printf("%.*s\n", 64, table);
+  } else if (strcmp(argv[1], "t2e") == 0) {
+    table_to_eaa(argv[2], ncbieaa, sncbieaa);
+    printf("%s,%s\n", ncbieaa, sncbieaa);
+  } else if (strcmp(argv[1], "id2t") == 0) {
+    int id = atoi(argv[2]);
+    if (ret = id_to_table(table, id)) {
+      fprintf(stderr, "id_to_table: %d\n", ret);
+      usage(argv[0]);
+      return 1;
+    }
+    printf("%.*s\n", 64, table);
+  } else if (strcmp(argv[1], "t2id") == 0) {
+    int id = table_to_id(argv[2]);
+    printf("%d\n", id);
+  } else {
+    usage(argv[0]);
+    return 1;
+  }
+}
+#endif
