@@ -85,10 +85,10 @@ void eaa_to_table(char out[64], const char ncbieaa[65], const char sncbieaa[65])
   char temp_table[64];
   memcpy(temp_table, ncbieaa, 64);
   for (int i = 0; i < 64; i++) {
-    /* The content of the table is the same as ncbieaa, except we encode the data
-       from sncbieaa in bits. */
-    if (sncbieaa[i] == '*' && ncbieaa[i] != '*')
-        temp_table[i] |= 0x80; /* Only set the special bit for optional stops */
+    /* The content of the table is the same as ncbieaa, except we encode the
+       data from sncbieaa in bits. */
+    if (sncbieaa[i] == '*')    /* Make all conditional stops into simple '*' */
+        temp_table[i] = '*';   /* We could encode it as 0x80 but then what? */
     else if (sncbieaa[i] != '-')
         temp_table[i] |= 0x20; 
 
@@ -367,10 +367,6 @@ void usage(char* a0) {
   fprintf(stderr, "       %s t2e  TABLE  # table string to NCBI\n", a0);
   fprintf(stderr, "       %s id2t ID     # id to table\n", a0);
   fprintf(stderr, "       %s t2id TABLE  # table to id\n\n", a0);
-  fprintf(stderr, "WARNING: TABLE can contain 8-bit characters.  When using "
-    "under a UTF-8 environemnt,\n");
-  fprintf(stderr, "         wrap output in `| iconv -f utf8 -t latin1`"
-    " and input in `$(iconv -f utf8 -t latin1 <<< $'...')`.\n");
 }
 int main(int argc, char *argv[]) {
   if (argc < 3) {

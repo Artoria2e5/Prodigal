@@ -97,7 +97,7 @@ inline static int is_n(unsigned char *useq, int n) {
 inline static int is_stop(unsigned char *seq, int n, struct _training *tinf) {
   unsigned char codon = trinuc(seq, n);
   /* We will worry about "might be a stop or not" at a later date. */
-  return (tinf->table[codon] == '*') || !!(tinf->table[codon] & 0x80);
+  return (tinf->table[codon] == '*');
 }
 
 inline static int is_start(unsigned char *seq, int n, struct _training *tinf) {
