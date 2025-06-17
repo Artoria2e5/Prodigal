@@ -382,20 +382,18 @@ void start_text(char *st, int type) {
   st[2] = 'G';
   st[3] = '\0';
 }
-
 /* Gives a text string for a mer of size 'len' (useful for outputting motifs) */
-void mer_text(char *qt, int len, int ndx) {
-  int i, val;
+void mer_text(char *out, int len, int mer) {
   char letters[4] = { 'A', 'G', 'C', 'T' };
-  if(len == 0) strcpy(qt, "None");
-  else {
-    for(i = 0; i < len; i++) {
-      val = (ndx&(1<<(2*i))) + (ndx&(1<<(2*i+1)));
-      val >>= (i*2);
-      qt[i] = letters[val];
-    }
-    qt[i] = '\0';
+  if (len == 0) {
+    strcpy(out, "None");
+    return;
   }
+  for (int i = 0; i < len; i++) {
+    out[i] = letters[mer & 0x03];
+    mer >>= 2;
+  }
+  out[len] = '\0';
 }
 
 /* Builds a 'len'-mer background for whole sequence */
@@ -408,8 +406,8 @@ void calc_mer_bg(int len, unsigned char *seq, unsigned char *rseq, int slen,
   counts = (int *)malloc(size * sizeof(int));
   for(i = 0; i < size; i++) counts[i] = 0;
   for(i = 0; i < slen-len+1; i++) {
-    counts[mer_ndx(len, seq, i)]++;
-    counts[mer_ndx(len, rseq, i)]++;
+    counts[nucmer(len, seq, i)]++;
+    counts[nucmer(len, rseq, i)]++;
     glob+=2;
   }
   for(i = 0; i < size; i++) bg[i] = (double)((counts[i]*1.0)/(glob*1.0));

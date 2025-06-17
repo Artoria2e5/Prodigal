@@ -53,6 +53,7 @@ struct _training {
                                    motifs) */
   double no_mot;                /* Weight for the case of no motif */
   double gene_dc[4096];         /* Coding statistics for the genome */
+  int    version;               /* Future-proofing */
   char   table[64];             /* Translation table as trinuc()-to-AA mapping */ 
 };
 

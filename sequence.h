@@ -128,17 +128,10 @@ inline static int is_gc(unsigned char *seq, int n) {
 
 /* Returns a single amino acid for this position */
 inline static char amino(unsigned char *seq, int n, struct _training *tinf, int is_init) {
-  unsigned char codon = trinuc(seq, n*2);
+  unsigned char codon = trinuc(seq, n);
   if(is_stop(seq, n, tinf)) return '*';
   if(is_start(seq, n, tinf) && is_init) return 'M';
   return (tinf->table[codon] & (~0xA0));
-}
-
-/* Converts a word of size len to a number (opposite bit-order of trinuc!) */
-inline static int mer_ndx(int len, unsigned char *seq, int pos) {
-  int i, ndx = 0;
-  for(i = 0; i < 2*len; i++) ndx |= (test(seq, pos*2+i)<<i);
-  return ndx;
 }
 
 /* Returns the minimum of two numbers */

@@ -345,14 +345,14 @@ void calc_dicodon_gene(struct _training *tinf, unsigned char *seq, unsigned
     if(in_gene == -1 && nod[path].strand == -1 && nod[path].type == STOP) {
       right = slen-nod[path].ndx+1;
       for(i = left; i < right-5; i+=3) {
-        counts[mer_ndx(6, rseq, i)]++;
+        counts[nucmer(6, rseq, i)]++;
         glob++;
       }
       in_gene = 0;
     }
     if(in_gene == 1 && nod[path].strand == 1 && nod[path].type != STOP) {
       left = nod[path].ndx;
-      for(i = left; i < right-5; i+=3) { counts[mer_ndx(6, seq, i)]++; glob++; }
+      for(i = left; i < right-5; i+=3) { counts[nucmer(6, seq, i)]++; glob++; }
       in_gene = 0;
     }
     path = nod[path].traceb;
@@ -595,7 +595,7 @@ void raw_coding_score(unsigned char *seq, unsigned char *rseq, int slen, struct
     }
     else if(nod[i].strand == 1) {
       for(j = last[fr]-3; j >= nod[i].ndx; j-=3)
-        score[fr] += tinf->gene_dc[mer_ndx(6, seq, j)];
+        score[fr] += tinf->gene_dc[nucmer(6, seq, j)];
       nod[i].cscore = score[fr];
       last[fr] = nod[i].ndx;
     }
@@ -609,7 +609,7 @@ void raw_coding_score(unsigned char *seq, unsigned char *rseq, int slen, struct
     }
     else if(nod[i].strand == -1) {
       for(j = last[fr]+3; j <= nod[i].ndx; j+=3)
-        score[fr] += tinf->gene_dc[mer_ndx(6, rseq, slen-j-1)];
+        score[fr] += tinf->gene_dc[nucmer(6, rseq, slen-j-1)];
       nod[i].cscore = score[fr];
       last[fr] = nod[i].ndx;
     }
@@ -1160,7 +1160,7 @@ void count_upstream_composition(unsigned char *seq, int slen, int strand,
 
   for(i = 1; i < 45; i++) {
     if(i > 2 && i < 15) continue;
-    if(start-i >= 0) tinf->ups_comp[count][mer_ndx(1, seq, start-i)]++;
+    if(start-i >= 0) tinf->ups_comp[count][nucmer(1, seq, start-i)]++;
     count++;
   }
 }
@@ -1181,7 +1181,7 @@ void score_upstream_composition(unsigned char *seq, int slen, struct _node *nod,
     if(i > 2 && i < 15) continue;
     if(start-i < 0) continue;
     nod->uscore += 0.4*tinf->st_wt*
-                   tinf->ups_comp[count][mer_ndx(1, seq, start-i)];
+                   tinf->ups_comp[count][nucmer(1, seq, start-i)];
     count++;
   }
 }
@@ -1212,7 +1212,7 @@ void find_best_upstream_motif(struct _training *tinf, unsigned char *seq,
       else if(j <= start-14-i) spacendx = 2;
       else if(j >= start-7-i) spacendx = 1;
       else spacendx = 0;
-      index = mer_ndx(i+3, wseq, j);
+      index = nucmer(i+3, wseq, j);
       score = tinf->mot_wt[i][spacendx][index];
       if(score > max_sc) {
         max_sc = score;
@@ -1272,7 +1272,7 @@ void update_motif_counts(double mcnt[4][4][4096], double *zero, unsigned char
         else if(j <= start-14-i) spacendx = 2;
         else if(j >= start-7-i) spacendx = 1;
         else spacendx = 0;
-        for(k = 0; k < 4; k++) mcnt[i][k][mer_ndx(i+3, wseq, j)] += 1.0;
+        for(k = 0; k < 4; k++) mcnt[i][k][nucmer(i+3, wseq, j)] += 1.0;
       }
     }
   }
@@ -1288,7 +1288,7 @@ void update_motif_counts(double mcnt[4][4][4096], double *zero, unsigned char
         else if(j <= start-14-i) spacendx = 2;
         else if(j >= start-7-i) spacendx = 1;
         else spacendx = 0;
-        mcnt[i][spacendx][mer_ndx(i+3, wseq, j)] += 1.0;
+        mcnt[i][spacendx][nucmer(i+3, wseq, j)] += 1.0;
       }
     }
   }

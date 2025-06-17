@@ -57,15 +57,32 @@ static inline unsigned char trinuc(unsigned char *bm, size_t ndx) {
   return ((stretch >> (ndx & 0x07)) & 0x3F);
 }
 
-/* Get twelve bits, which can be in four bytes
-   mer_ndx(6) is relatively common and should be replaced with this
-   (shorter assembly).  unfortunately the order is different, which
-   breaks tinf->gene_dc compatibility! */
-static inline unsigned char hexnuc(unsigned char *bm, int ndx) {
+#ifndef __GNUC__
+#define __attribute__(x) /* do nothing */
+#endif
+
+/* Get an n-mer (we call a maximum of 6, but this can go to 16 for 32-bit int) */
+__attribute__((optimize("unroll-loops")))
+static inline unsigned nucmer(unsigned char n, unsigned char *bm, size_t ndx) {
   ndx *= 2;
   unsigned byte = ndx >> 3;
-  unsigned stretch = (bm[byte + 3] << 24) | (bm[byte + 2] << 16) |
-                     (bm[byte + 1] << 8) | bm[byte];
-  return ((stretch >> (ndx & 0x07)) & 0x3F);
+  unsigned tot_bytes = 1 + (n + 3) / 4;
+  unsigned stretch = 0;
+  for (unsigned i = 0; i < tot_bytes; i++) {
+    stretch |= (bm[byte + i] << (i * 8));
+  }
+  return ((stretch >> (ndx & 0x07)) & ((1 << (n * 2)) - 1));
+}
+
+/* for converting between nucmer() and mer_ndx(), assume 32bit max */
+static inline unsigned range_preserving_bitrev(unsigned x, unsigned char bits)
+{
+  /* first do simple bit reverse: 00|001101 -> 101100|00
+     ReverseBits7ops32bit() */
+  unsigned brev = ((x * 0x0802LU & 0x22110LU) |
+                   (x * 0x8020LU & 0x88440LU)) *
+                      0x10101LU >> 16;
+  /* then shift to the right number of bits: 101100|00 -> 00|101100 */
+  return (brev >> (sizeof(unsigned) * 8 - bits));
 }
 #endif
