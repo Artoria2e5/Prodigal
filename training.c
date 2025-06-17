@@ -76,14 +76,18 @@ int read_training_file(char *fn, struct _training *tinf) {
   int ret = 0;
   fh = fopen(fn, "rb");
   if(fh == NULL) return 1;
-  rv = fread(tinf, 1, sizeof(struct _training), fh);
-  fprintf(stderr, "Read %zu bytes (should be v1 %zu or v0 %zu)\n",
-        rv, sizeof(struct _training), sizeof(struct _training_v0));
-  if(rv != sizeof(struct _training)) {
-    if(rv == sizeof(struct _training_v0))
+  rv = fread(tinf, 1, MAX_TRAINING_SIZE, fh);
+  switch (rv) {
+    case sizeof(struct _training):
+      break;
+    case sizeof(struct _training_v0):
       v0_to_v1((struct _training_v0 *) tinf);
-    else
-      ret = -1;
+      break;
+    default:
+      fprintf(stderr, "Read %zu bytes (should be v1 %zu or v0 %zu)\n",
+        rv, sizeof(struct _training), sizeof(struct _training_v0));
+      ret = -1; // Unexpected size
+      break;
   }
   fclose(fh);
   return ret;
