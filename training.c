@@ -21,10 +21,11 @@
 #include "training.h"
 #include "table.h"
 #include "bitmap.h"
+#include <stdio.h>
 
 
-/* Updates v0 training data to v1 (flip 4096, table) */
-void v0_to_v1(struct _training *tinf) {
+/* Updates meta training data to v1 (flip 4096, table) */
+void meta_to_v1(struct _training *tinf) {
   double old_mot_wt[4][4][4096];
   double old_gene_dc[4096];
 
@@ -37,28 +38,55 @@ void v0_to_v1(struct _training *tinf) {
         tinf->mot_wt[j][k][i] = old_mot_wt[j][k][old_i];
       }
     }
-    tinf->gene_dc[i] = old_gene_dc[i];
+    tinf->gene_dc[i] = old_gene_dc[old_i];
   }
 
   tinf->version = 1;
   id_to_table(tinf->table, tinf->trans_table);
 }
 
+#define COPY(f)  tinf.f = old->f;
+#define CLONE(f) memcpy(tinf.f, old->f, sizeof(old->f));
+/* Updates on-disk training data to v1 (copy fields then meta_to_v1()) */
+void v0_to_v1(struct _training_v0 *old) {
+  struct _training tinf;
+  COPY(gc);
+  COPY(trans_table);
+  COPY(st_wt);
+  CLONE(bias);
+  CLONE(type_wt);
+  COPY(uses_sd);
+  CLONE(rbs_wt);
+  CLONE(ups_comp);
+  CLONE(mot_wt);
+  COPY(no_mot);
+  CLONE(gene_dc);
+  tinf.version = 0;
+  memset(tinf.table, '\0', sizeof(tinf.table));
+  meta_to_v1(&tinf);
+  memcpy(old, &tinf, sizeof(tinf));
+}
+#undef COPY
+#undef CLONE
+
 /* Reads a training file to use for gene prediction */
 int read_training_file(char *fn, struct _training *tinf) {
   size_t rv;
   FILE *fh;
+  int ret = 0;
   fh = fopen(fn, "rb");
   if(fh == NULL) return 1;
   rv = fread(tinf, 1, sizeof(struct _training), fh);
+  fprintf(stderr, "Read %zu bytes (should be v1 %zu or v0 %zu)\n",
+        rv, sizeof(struct _training), sizeof(struct _training_v0));
   if(rv != sizeof(struct _training)) {
     if(rv == sizeof(struct _training_v0))
-      v0_to_v1(tinf);
+      v0_to_v1((struct _training_v0 *) tinf);
     else
-      return -1;
+      ret = -1;
   }
   fclose(fh);
-  return 0;
+  return ret;
 }
 
 /* Writes a training file to use for a later run of gene prediction */

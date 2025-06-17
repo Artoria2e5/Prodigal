@@ -73,7 +73,8 @@ struct _training_v0 {
   double gene_dc[4096];
 };
 
-void v0_to_v1(struct _training *);
+void meta_to_v1(struct _training *);
+void v0_to_v1(struct _training_v0 *old);
 int write_training_file(char *, const struct _training *);
 int read_training_file(char *, struct _training *);
 
