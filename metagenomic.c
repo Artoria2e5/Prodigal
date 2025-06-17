@@ -25,56 +25,10 @@
   from the model organisms that best represent all of microbial Genbank.  
 *******************************************************************************/
 void initialize_metagenomic_bins(struct _metagenomic_bin *meta) {
-  initialize_metagenome_0(meta[0].tinf);
-  initialize_metagenome_1(meta[1].tinf);
-  initialize_metagenome_2(meta[2].tinf);
-  initialize_metagenome_3(meta[3].tinf);
-  initialize_metagenome_4(meta[4].tinf);
-  initialize_metagenome_5(meta[5].tinf);
-  initialize_metagenome_6(meta[6].tinf);
-  initialize_metagenome_7(meta[7].tinf);
-  initialize_metagenome_8(meta[8].tinf);
-  initialize_metagenome_9(meta[9].tinf);
-  initialize_metagenome_10(meta[10].tinf);
-  initialize_metagenome_11(meta[11].tinf);
-  initialize_metagenome_12(meta[12].tinf);
-  initialize_metagenome_13(meta[13].tinf);
-  initialize_metagenome_14(meta[14].tinf);
-  initialize_metagenome_15(meta[15].tinf);
-  initialize_metagenome_16(meta[16].tinf);
-  initialize_metagenome_17(meta[17].tinf);
-  initialize_metagenome_18(meta[18].tinf);
-  initialize_metagenome_19(meta[19].tinf);
-  initialize_metagenome_20(meta[20].tinf);
-  initialize_metagenome_21(meta[21].tinf);
-  initialize_metagenome_22(meta[22].tinf);
-  initialize_metagenome_23(meta[23].tinf);
-  initialize_metagenome_24(meta[24].tinf);
-  initialize_metagenome_25(meta[25].tinf);
-  initialize_metagenome_26(meta[26].tinf);
-  initialize_metagenome_27(meta[27].tinf);
-  initialize_metagenome_28(meta[28].tinf);
-  initialize_metagenome_29(meta[29].tinf);
-  initialize_metagenome_30(meta[30].tinf);
-  initialize_metagenome_31(meta[31].tinf);
-  initialize_metagenome_32(meta[32].tinf);
-  initialize_metagenome_33(meta[33].tinf);
-  initialize_metagenome_34(meta[34].tinf);
-  initialize_metagenome_35(meta[35].tinf);
-  initialize_metagenome_36(meta[36].tinf);
-  initialize_metagenome_37(meta[37].tinf);
-  initialize_metagenome_38(meta[38].tinf);
-  initialize_metagenome_39(meta[39].tinf);
-  initialize_metagenome_40(meta[40].tinf);
-  initialize_metagenome_41(meta[41].tinf);
-  initialize_metagenome_42(meta[42].tinf);
-  initialize_metagenome_43(meta[43].tinf);
-  initialize_metagenome_44(meta[44].tinf);
-  initialize_metagenome_45(meta[45].tinf);
-  initialize_metagenome_46(meta[46].tinf);
-  initialize_metagenome_47(meta[47].tinf);
-  initialize_metagenome_48(meta[48].tinf);
-  initialize_metagenome_49(meta[49].tinf);
+  for (int i = 0; i < NMETA; i++) {
+    meta[i].tinf = &meta_pretrain[i];
+    meta_to_v1(meta[i].tinf);
+  }
   sprintf(meta[0].desc, "%d|%s|%s|%.1f|%d|%d", 0,
           "Mycoplasma_bovis_PG45",
           "B", 29.31, meta[0].tinf->trans_table, meta[0].tinf->uses_sd);

@@ -638,7 +638,6 @@ int main(int argc, char *argv[]) {
   free(useq);
   free(nodes);
   free(genes);
-  for(i = 0; i < NUM_META; i++) free(meta[i].tinf);
 
   /* Close all the filehandles and exit */
   INPUT_CLOSE(input_ptr);

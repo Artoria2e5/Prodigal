@@ -26,10 +26,11 @@
 #include <time.h>
 #include "sequence.h"
 #include "training.h"
+#include "training_baked.h"
 #include "node.h"
 
 #define NUM_BIN 6
-#define NUM_META 50
+#define NUM_META NMETA
 #define SAMPLE_LEN 120
 #define MAX_SAMPLE 200
 

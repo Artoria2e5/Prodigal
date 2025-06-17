@@ -46,7 +46,7 @@ table.o: table.c $(HEADERS) table-data.cc
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Too big to recompile on every header change
-training.o: training.c training.h table.h
+training-baked.o: training-baked.c training.h training-baked.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 %.o: %.c $(HEADERS)
