@@ -34,10 +34,6 @@
 #define P_TAG P_3(P_T, P_A, P_G)
 #define P_TAA P_3(P_T, P_A, P_A)
 #define P_TGA P_3(P_T, P_G, P_A)
-
-#define MAXTABLE 33
-#define STRMAXTABLE "33"
-
 /* Conversion from and to {ncbieaa,sncbieaa} */
 void eaa_to_table(char[64], const char[65], const char[65]);
 void table_to_eaa(const char[64], char[65], char[65]);
@@ -49,5 +45,6 @@ int table_to_id(const char[64]);
 /* Variant for handling user input, which is potentially malformed */
 int cmdline_eaa_to_table(char[64], const char[130]);
 
+#include "table-data.hh"
 extern const char predefined_tables[MAXTABLE+1][2][65];
 #endif

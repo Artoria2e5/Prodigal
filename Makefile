@@ -28,7 +28,7 @@ TARGET  = prodigal
 TABLEUTIL = prodigal-table
 ZTARGET  = zprodigal
 SOURCES = $(shell echo *.c)
-HEADERS = $(shell echo *.h)
+HEADERS = $(shell echo *.h) table-data.hh
 OBJECTS = $(SOURCES:.c=.o)
 ZOBJECTS = $(SOURCES:.c=.oz)
 
@@ -38,6 +38,12 @@ all: $(TARGET) $(TABLEUTIL)
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
+
+table-data.hh table-data.cc: gc.prt
+	./maketable.sh < gc.prt
+
+table.o: table.c $(HEADERS) table-data.cc
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Too big to recompile on every header change
 training.o: training.c training.h table.h

@@ -1,27 +1,27 @@
 #!/bin/bash
 # maketable.sh: convert gc.prt into const char predefined_tables[N][2][65]
-# Usage: ./maketable.sh < gc.prt > snippet.c
+# Usage: ./maketable.sh < gc.prt
 
 # Hardcoded data for private shenanigans
 declare -a GAPS_DES GAPS_EAA GAPS_SEA
 
 add_gap() {
-    GAPS_DES[$1]="$2"
-    GAPS_EAA[$1]="$3"
-    GAPS_SEA[$1]="$4"
+  GAPS_DES[$1]="$2"
+  GAPS_EAA[$1]="$3"
+  GAPS_SEA[$1]="$4"
 }
 
 add_gap 0 "11 + Pyl (Kivenson et al. 2021)" \
   "FFLLSSSSYY*OCC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG" \
   "---M------*---*----M---------------M----------------------------"
 
-add_gap 7 "11 + Sec (toy example, biologically meaningless due to SECIS)" \
-  "FFLLSSSSYY**CCUWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG" \
-  "---M------**-------M---------------M----------------------------"
+add_gap 7 "Unused - DO NOT USE" \
+  "***M***************M***************M****************************" \
+  "***M***************M***************M****************************"
 
-add_gap 8 "11 + Pyl + Sec (toy example,  biologically meaningless due to SECIS)" \
-  "FFLLSSSSYY*OCCUWLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG" \
-  "---M------*--------M---------------M----------------------------"
+add_gap 8 "Unused - DO NOT USE" \
+  "***M***************M***************M****************************" \
+  "***M***************M***************M****************************"
 
 add_gap 17 "Enterosoma/UBA4682 (Shulgina & Eddy 2021)" \
   "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRMVVVVAAAADDEEGGGG" \
@@ -42,118 +42,172 @@ add_gap 20 "Absconditabacterales (Shulgina & Eddy 2021)" \
 declare -a NCBI_DES NCBI_EAA NCBI_SEA
 maxid=0
 
-die_unexpected() {
-  printf "Unexpected line in table given %s: %s\n" "$STATE" "$line" >&2
-  exit 1
-}
+SYMBOLS=("::=" "{" "}" "," "name" "id" "ncbieaa" "sncbieaa" "Genetic-code-table")
+for sym in "${SYMBOLS[@]}"; do
+  SYMBOLS_REGEX+="|"
+  if [[ $sym == "{" || $sym == "}" ]]; then
+    SYMBOLS_REGEX+="\\$sym"
+  else
+    SYMBOLS_REGEX+="$sym"
+  fi
+done
+SYMBOLS_REGEX="(${SYMBOLS_REGEX:1})"
+
+shopt -s extglob
+TOKENS=()
+while read -r line; do
+  linelen=${#line}
+  ((i = 0))
+  while ((i < linelen)); do
+    slice="${line:i}"
+    if [[ $slice =~ ^[$' \t']+ ]]; then
+      ((i += ${#BASH_REMATCH[0]}))
+      slice="${line:i}"
+    fi
+    if [[ $slice =~ ^$SYMBOLS_REGEX ]]; then
+      TOKENS+=("${BASH_REMATCH[0]}")
+      ((i += ${#BASH_REMATCH[0]}))
+    elif [[ $slice =~ ^[0-9]+ ]]; then
+      TOKENS+=($'\t'"${BASH_REMATCH[0]}")
+      ((i += ${#BASH_REMATCH[0]}))
+    elif [[ $slice =~ ^\"([^\"]+)\" ]]; then
+      # mark string with \n
+      TOKENS+=($'\n'"${BASH_REMATCH[1]}")
+      ((i += ${#BASH_REMATCH[0]}))
+    elif [[ $slice =~ ^\"([^\"]+)$ ]]; then
+      # incomplete string
+      if ! read -r line2; then
+        printf 'Unexpected end of file, want closing \"' >&2
+        exit 1
+      fi
+      line+=" $line2"
+      linelen=${#line}
+      continue
+    elif [[ $slice =~ ^-- ]]; then
+      continue 2
+    else
+      # shellcheck disable=2319
+      ret=$?
+      printf "Failed to tokenize (%d): %q\n" $ret "$slice" >&2
+      exit 1
+    fi
+  done
+done
 
 STATE=FILE_BEGIN
-while read -r line; do
-  # Remove comments crudely
-  line=${line%%-- *}
-  line=${line#--\**}
+NTOK=${#TOKENS[@]}
+((itok = 0))
 
-  # whitespace removal magic from https://stackoverflow.com/a/3352015
-  line="${line#"${line%%[![:space:]]*}"}"
-  line="${line%"${line##*[![:space:]]}"}"
-
-  if [[ -z $line ]]; then
-    continue  # Skip empty lines
+consume_tok() {
+  tok="${TOKENS[$itok]}"
+  ((itok++))
+  if ((itok >= NTOK)); then
+    tok="EOF"
   fi
+}
+die_unexpected() {
+  local state=$STATE
+  if [[ -n $1 ]]; then
+    state+=" ($1)"
+  fi
+  printf "Unexpected token %q (%d) in table given %s\n" "$tok" "$itok" "$state" >&2
+  exit 1
+}
+want_tok() {
+  # shellcheck disable=2053
+  if [[ $tok != $1 ]]; then
+    die_unexpected "want $1"
+  fi
+}
+want_string() {
+  if [[ $tok != $'\n'* ]]; then
+    die_unexpected "want string"
+  fi
+  tok="${tok:1}"
+}
+want_num() {
+  if [[ $tok != $'\t'* ]]; then
+    die_unexpected "want number"
+  fi
+  tok="${tok:1}"
+}
 
+for ((itok = 0; itok < NTOK; )); do
+  consume_tok
   case $STATE in
     FILE_BEGIN)
-      if [[ $line == "Genetic-code-table"* ]]; then
-        STATE=TABLE_EXPECT_ELEMENT
-      else
-        continue
-      fi
+      want_tok "Genetic-code-table"
+      consume_tok
+      want_tok "::="
+      consume_tok
+      want_tok "{"
+      STATE=TABLE_EXPECT_ELEMENT
       ;;
     TABLE_EXPECT_ELEMENT)
-      if [[ $line == "{" ]]; then
-        STATE=ELEMENT_EXPECT_NAME
-      elif [[ $line == "}" ]]; then
-        STATE=TABLE_END
-        break
-      else
-        die_unexpected
-      fi
+      want_tok "{"
+      STATE=ELEMENT_EXPECT_NAME
       ;;
     ELEMENT_EXPECT_NAME)
-      if [[ $line == name* ]]; then
-        name=${line#name \"}
-        if [[ $name == *'" ,' ]]; then
-          name=${name%'" ,'}
-          STATE=ELEMENT_EXPECT_ID
-        else
-          STATE=ELEMENT_EXPECT_NAME_CONT
-        fi
-      else
-        die_unexpected
-      fi
-      ;;
-    ELEMENT_EXPECT_NAME_CONT)
-      if [[ $line = *'" ,' ]]; then
-        name=$name\ ${line%'" ,'}
-        STATE=ELEMENT_EXPECT_ID
-      else
-        die_unexpected
-      fi
-      ;;
-    ELEMENT_EXPECT_ID)
-      if [[ $line == id* ]]; then
-        id=${line#id }
-        id=${id% ,}
-        (( maxid = id > maxid ? id : maxid ))
-        STATE=ELEMENT_EXPECT_EAA
-      elif [[ $line == name* ]]; then
-        continue # Skip multiple names
-      else
-        die_unexpected
-      fi
-      ;;
-    ELEMENT_EXPECT_EAA)
-      if [[ $line == 'ncbieaa  "'* ]]; then
-        eaa=${line#'ncbieaa  "'}
-        eaa=${eaa%\",}
-        STATE=ELEMENT_EXPECT_SEA
-      else
-        die_unexpected
-      fi
-      ;;
-    ELEMENT_EXPECT_SEA)
-      if [[ $line == 'sncbieaa "'* ]]; then
-        sea=${line#'sncbieaa "'}
-        sea=${sea%\"}
-        STATE=ELEMENT_EXPECT_END
-      else
-        die_unexpected
-      fi
-      ;;
-    ELEMENT_EXPECT_END)
-      if [[ $line == "} ," || $line == "}," ]]; then
-        NCBI_DES[$id]=$name
-        NCBI_EAA[$id]=$eaa
-        NCBI_SEA[$id]=$sea
-        STATE=TABLE_EXPECT_ELEMENT
-      elif [[ $line == "}" ]]; then
-        NCBI_DES[$id]=$name
-        NCBI_EAA[$id]=$eaa
-        NCBI_SEA[$id]=$sea
-        STATE=TABLE_END
-        break
-      else
-        die_unexpected
-      fi
+      want_tok "name"
+      consume_tok
+      want_string
+      name=$tok
+      consume_tok
+      want_tok ,
+
+      STATE=ELEMENT_EXPECT_ID
+      consume_tok
+      while [[ $tok == "name" ]]; do
+        consume_tok
+        want_string
+        consume_tok
+        want_tok ,
+        consume_tok
+      done
+      want_tok id
+      consume_tok
+      want_num
+      id=$tok
+      ((maxid = id > maxid ? id : maxid))
+      consume_tok
+      want_tok ,
+
+      STATE=ELEMENT_EXPECT_EAA
+      consume_tok
+      want_tok "ncbieaa"
+      consume_tok
+      want_string
+      eaa=$tok
+      consume_tok
+      want_tok ,
+
+      STATE=ELEMENT_EXPECT_SEA
+      consume_tok
+      want_tok "sncbieaa"
+      consume_tok
+      want_string
+      sea=$tok
+
+      STATE=ELEMENT_EXPECT_END
+      consume_tok
+      want_tok "}"
+      NCBI_DES[id]=$name
+      NCBI_EAA[id]=$eaa
+      NCBI_SEA[id]=$sea
+
+      STATE=ELEMENT_END
+      consume_tok
+      case $tok in
+        EOF) STATE=TABLE_END ;;
+        ,) STATE=TABLE_EXPECT_ELEMENT ;;
+        *) die_unexpected "want , or }" ;;
+      esac
       ;;
     TABLE_END)
-      if [[ $line == "}" ]]; then
-        STATE=FILE_END
-      else
-        die_unexpected
-      fi
+      want_tok EOF
       ;;
-    FILE_END)
+    *)
+      die_unexpected "unknown state"
       ;;
   esac
 done
@@ -172,26 +226,43 @@ mask_sea() {
   echo "$newsea"
 }
 
-printf "// Generated by maketable.sh\n"
-printf "const char predefined_tables[%d][2][65] = {\n" "$((maxid + 1))"
+exec >table-data.hh
+cat <<EOF
+/* This is not a C++ file, but we don't want make glob to see it! */
+/* Generated by maketable.sh */
+#ifndef TABLE_DATA_HH
+#define TABLE_DATA_HH
+#define MAXTABLE $maxid
+#define STRMAXTABLE "$maxid"
+#endif
+EOF
 
-for (( i=0; i<=maxid; i++ )); do
-  if [[ -n ${NCBI_DES[$i]} ]]; then
-    if [[ -n ${GAPS_DES[$i]} ]]; then
+exec >table-data.cc
+cat <<EOF
+/* This is not a C++ file, but we don't want make glob to see it! */
+/* Generated by maketable.sh */
+#ifndef TABLE_DATA_CC
+#define TABLE_DATA_CC
+const char predefined_tables[$((maxid + 1))][2][65] = {
+EOF
+
+for ((i = 0; i <= maxid; i++)); do
+  if [[ -n ${NCBI_DES[i]} ]]; then
+    if [[ -n ${GAPS_DES[i]} ]]; then
       printf 'Warning: Both NCBI and GAPS entries for id %d, using NCBI\n' "$i" >&2
     fi
   else
-    if [[ -n ${GAPS_DES[$i]} ]]; then
-      NCBI_DES[$i]="(NON-NCBI) "${GAPS_DES[$i]}
-      NCBI_EAA[$i]=${GAPS_EAA[$i]}
-      NCBI_SEA[$i]=${GAPS_SEA[$i]}
+    if [[ -n ${GAPS_DES[i]} ]]; then
+      NCBI_DES[i]="(NON-NCBI) "${GAPS_DES[i]}
+      NCBI_EAA[i]=${GAPS_EAA[i]}
+      NCBI_SEA[i]=${GAPS_SEA[i]}
     else
-      NCBI_DES[$i]="(NON-NCBI) Undefined, fill with standard"
-      NCBI_EAA[$i]="FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG"
-      NCBI_SEA[$i]="---M------**--*----M---------------M----------------------------"
+      NCBI_DES[i]="(NON-NCBI) Undefined, fill with standard"
+      NCBI_EAA[i]="FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG"
+      NCBI_SEA[i]="---M------**--*----M---------------M----------------------------"
     fi
   fi
   printf '  /* %d. %s */\n  {\n    "%s",\n    "%s"\n  },\n' "$i" "${NCBI_DES[$i]}" "${NCBI_EAA[$i]}" "$(mask_sea "${NCBI_SEA[$i]}")"
 done
 
-printf '};\n'
+printf '};\n#endif\n'
