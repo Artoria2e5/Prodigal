@@ -23,33 +23,45 @@ if [[ ! -f $INPUT_FILE ]]; then
 fi
 
 mkdir -p "test"
+rm -f "$OUT_PREFIX".old.* "$OUT_PREFIX".new.* "$OUT_PREFIX".*.diff
 
-if ! "$OLD_BINARY" -i "$INPUT_FILE" -f gbk -o "$OUT_PREFIX".old.gbk -d "$OUT_PREFIX".old.ffn -a "$OUT_PREFIX".old.faa "$@"; then
-    echo "Error: Old binary failed to run."
-    exit 1
+time "$OLD_BINARY" -i "$INPUT_FILE" -f gbk -o "$OUT_PREFIX".old.gbk -d "$OUT_PREFIX".old.ffn -a "$OUT_PREFIX".old.faa "$@"
+ret=$?
+if ((ret)); then
+    echo "Error: Old binary failed to run with $ret."
+fi
+# rerun if empty (first training creation)
+if [[ ! -s "$OUT_PREFIX".old.gbk || ! -s "$OUT_PREFIX".old.ffn || ! -s "$OUT_PREFIX".old.faa ]]; then
+    echo "Warning: Old binary produced empty output files, retrying..."
+    time "$OLD_BINARY" -i "$INPUT_FILE" -f gbk -o "$OUT_PREFIX".old.gbk -d "$OUT_PREFIX".old.ffn -a "$OUT_PREFIX".old.faa "$@"
+    ret=$?
+    if ((ret)); then
+        echo "Error: Old binary failed to run with $ret on retry."
+    fi
 fi
 
-if ! ./prodigal -i "$INPUT_FILE" -f gbk -o "$OUT_PREFIX".new.gbk -d "$OUT_PREFIX".new.ffn -a "$OUT_PREFIX".new.faa "$@"; then
-    echo "Error: New binary failed to run."
-    exit 1
+time ./prodigal -i "$INPUT_FILE" -f gbk -o "$OUT_PREFIX".new.gbk -d "$OUT_PREFIX".new.ffn -a "$OUT_PREFIX".new.faa "$@"
+ret=$?
+if ((ret)); then
+    echo "Error: New binary failed to run with $ret."
 fi
 
 # normalize line endings
 sed -i -e 's/\r//g' "$OUT_PREFIX".{old,new}.*
 
-if ! diff -u "$OUT_PREFIX".old.gbk "$OUT_PREFIX".new.gbk > "$OUT_PREFIX".gbk.diff; then
+if ! diff -u "$OUT_PREFIX".old.gbk "$OUT_PREFIX".new.gbk >"$OUT_PREFIX".gbk.diff; then
     echo "GBK files differ."
 else
     echo "GBK files are identical."
 fi
 
-if ! diff -u "$OUT_PREFIX".old.ffn "$OUT_PREFIX".new.ffn > "$OUT_PREFIX".ffn.diff; then
+if ! diff -u "$OUT_PREFIX".old.ffn "$OUT_PREFIX".new.ffn >"$OUT_PREFIX".ffn.diff; then
     echo "FFN files differ."
 else
     echo "FFN files are identical."
 fi
 
-if ! diff -u "$OUT_PREFIX".old.faa "$OUT_PREFIX".new.faa > "$OUT_PREFIX".faa.diff; then
+if ! diff -u "$OUT_PREFIX".old.faa "$OUT_PREFIX".new.faa >"$OUT_PREFIX".faa.diff; then
     echo "FAA files differ."
 else
     echo "FAA files are identical."
