@@ -114,8 +114,6 @@ void table_to_eaa(const char table[64], char ncbieaa[65], char sncbieaa[65]) {
 
 /* Part 2. Predefined tables, which is a mix of NCBI and other data.
     */
-#include "table-data.cc"
-
 int id_to_table(char out[64], int id) {
   if (id < 0 || id > MAXTABLE) {
     return -1;

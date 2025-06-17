@@ -22,13 +22,13 @@ SHELL   = /bin/sh
 CC      = gcc
 
 CFLAGS  += -pedantic -Wall -O3 -DSUPPORT_GZIP_COMPRESSED
-LFLAGS = -lm $(LDFLAGS) -lz
+LFLAGS = -lm -Wl,-O2 $(LDFLAGS) -lz
 
 TARGET  = prodigal
 TABLEUTIL = prodigal-table
 ZTARGET  = zprodigal
 SOURCES = $(shell echo *.c)
-HEADERS = $(shell echo *.h) table-data.hh
+HEADERS = $(shell echo *.h) table_baked.h
 OBJECTS = $(SOURCES:.c=.o)
 ZOBJECTS = $(SOURCES:.c=.oz)
 
@@ -39,11 +39,11 @@ all: $(TARGET) $(TABLEUTIL)
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
 
-table-data.hh table-data.cc: gc.prt
-	./maketable.sh < gc.prt
+$(TABLEUTIL): table.c table.h table_baked.o
+	$(CC) $(CFLAGS) -DTABLE_UTIL -Wno-parentheses -o $@ $< table_baked.o $(LFLAGS)
 
-table.o: table.c $(HEADERS) table-data.cc
-	$(CC) $(CFLAGS) -c -o $@ $<
+table_baked.c table_baked.h: gc.prt maketable.sh
+	./maketable.sh < gc.prt
 
 # Too big to recompile on every header change
 training-baked.o: training-baked.c training.h training-baked.h
@@ -51,9 +51,6 @@ training-baked.o: training-baked.c training.h training-baked.h
 
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c -o $@ $<
-
-$(TABLEUTIL): table.c table.h
-	$(CC) $(CFLAGS) -DTABLE_UTIL -Wno-parentheses -o $@ $< $(LFLAGS)
 
 install: $(TARGET) $(TABLEUTIL)
 	install -d -m 0755 $(INSTALLDIR)
