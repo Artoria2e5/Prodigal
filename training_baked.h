@@ -3,6 +3,6 @@
 #include "training.h"
 
 #define NMETA 50
-#define PRETRAIN_VER 0
+#define PRETRAIN_VER 1
 extern struct _training meta_pretrain[NMETA];
 #endif

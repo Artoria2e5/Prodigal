@@ -25,9 +25,8 @@
   from the model organisms that best represent all of microbial Genbank.  
 *******************************************************************************/
 void initialize_metagenomic_bins(struct _metagenomic_bin *meta) {
-  for (int i = 0; i < NMETA; i++) {
+  for (int i = 0; i < NMETA; i++) {;
     meta[i].tinf = &meta_pretrain[i];
-    meta_to_v1(meta[i].tinf);
   }
   sprintf(meta[0].desc, "%d|%s|%s|%.1f|%d|%d", 0,
           "Mycoplasma_bovis_PG45",

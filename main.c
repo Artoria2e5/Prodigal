@@ -57,7 +57,8 @@ int main(int argc, char *argv[]) {
   pid_t pid;
   struct _node *nodes;
   struct _gene *genes;
-  struct _training tinf;
+  struct _training_v0 tinf;
+  struct _training* ptinf = (struct _training*) &tinf;
   struct _metagenomic_bin meta[NUM_META];
   mask mlist[MAX_MASKS];
 
@@ -75,17 +76,17 @@ int main(int argc, char *argv[]) {
   memset(useq, 0, MAX_SEQ/8*sizeof(unsigned char));
   memset(nodes, 0, STT_NOD*sizeof(struct _node));
   memset(genes, 0, MAX_GENES*sizeof(struct _gene));
-  memset(&tinf, 0, sizeof(struct _training));
+  memset(ptinf, 0, MAX_TRAINING_SIZE);
 
   for(i = 0; i < NUM_META; i++) {
     memset(&meta[i], 0, sizeof(struct _metagenomic_bin));
     strcpy(meta[i].desc, "None");
-    meta[i].tinf = (struct _training *)malloc(sizeof(struct _training));
+    meta[i].tinf = (struct _training *)malloc(MAX_TRAINING_SIZE);
     if(meta[i].tinf == NULL) {
       fprintf(stderr, "\nError: Malloc failed on training structure.\n\n"); 
       exit(1);
     }
-    memset(meta[i].tinf, 0, sizeof(struct _training));
+    memset(meta[i].tinf, 0, MAX_TRAINING_SIZE);
   }
   nn = 0; slen = 0; ipath = 0; ng = 0; nmask = 0;
   user_tt = -2; is_meta = 0; num_seq = 0; quiet = 0;
@@ -109,9 +110,9 @@ int main(int argc, char *argv[]) {
     manually set the weight to an average value that seems to work decently 
     for 99% of genomes.  This problem may be revisited in future versions.
   ***************************************************************************/
-  tinf.st_wt = 4.35;
-  tinf.trans_table = 11;
-  id_to_table(tinf.table, tinf.trans_table);
+  ptinf->st_wt = 4.35;
+  ptinf->trans_table = 11;
+  id_to_table(ptinf->table, ptinf->trans_table);
 
   /* Parse the command line arguments */
   for(i = 1; i < argc; i++) {
@@ -161,16 +162,16 @@ int main(int argc, char *argv[]) {
     else if(strcmp(argv[i], "-g") == 0 || strcmp(argv[i], "-G") == 0) {
       if ('0' <= argv[i+1][0] && argv[i+1][0] <= '9') {
         /* Numeric ID path */
-        tinf.trans_table = atoi(argv[i+1]);
-        if (id_to_table(tinf.table, tinf.trans_table))
+        ptinf->trans_table = atoi(argv[i+1]);
+        if (id_to_table(ptinf->table, ptinf->trans_table))
           usage("Invalid translation table numeric specified (should be "
           "between 0 and " STRMAXTABLE ", inclusive)");
-        user_tt = tinf.trans_table;
+        user_tt = ptinf->trans_table;
       } else {
         /* LUMP-OF-STRING PATH */
-        if (cmdline_eaa_to_table(tinf.table, argv[i+1]))
+        if (cmdline_eaa_to_table(ptinf->table, argv[i+1]))
           usage("Invalid translation table string specified.");
-        tinf.trans_table = user_tt = table_to_id(tinf.table);
+        ptinf->trans_table = user_tt = table_to_id(ptinf->table);
       }
       i++;
     }
@@ -218,8 +219,8 @@ int main(int argc, char *argv[]) {
       exit(2);
     }
     char orig_table[64];
-    memcpy(orig_table, tinf.table, 64);
-    rv = read_training_file(train_file, &tinf);
+    memcpy(orig_table, ptinf->table, 64);
+    rv = read_training_file(train_file, ptinf);
     if(rv == 1) do_training = 1;
     else {
       if(force_nonsd == 1) { 
@@ -228,18 +229,18 @@ int main(int argc, char *argv[]) {
       }
       if(quiet == 0)
         fprintf(stderr, "Reading in training data from file %s...", train_file);
-      if(user_tt != -2 && user_tt != tinf.trans_table) { 
+      if(user_tt != -2 && user_tt != ptinf->trans_table) { 
         fprintf(stderr, "\n\nWarning: user-specified translation table %d "
           "does", user_tt);
         fprintf(stderr, "not match the one in the specified training file "
-          "%d!\n\n", tinf.trans_table);
+          "%d!\n\n", ptinf->trans_table);
       }
-      if(user_tt == -1 && tinf.trans_table == -1 &&
-        memcmp(orig_table, tinf.table, 64) != 0) {
+      if(user_tt == -1 && ptinf->trans_table == -1 &&
+        memcmp(orig_table, ptinf->table, 64) != 0) {
         fprintf(stderr, "\n\nWarning: user-specified translation table %.64s "
           "does\n", orig_table);
         fprintf(stderr, "not match the one in the specified training file "
-          "%.64s!\n\n", tinf.table);
+          "%.64s!\n\n", ptinf->table);
       }
       if(rv == -1) { 
         fprintf(stderr, "\n\nError: training file did not read correctly!\n"); 
@@ -327,7 +328,7 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "Request:  Single Genome, Phase:  Training\n");
       fprintf(stderr, "Reading in the sequence(s) to train..."); 
     }
-    slen = read_seq_training(input_ptr, seq, useq, &(tinf.gc), do_mask, mlist,
+    slen = read_seq_training(input_ptr, seq, useq, &(ptinf->gc), do_mask, mlist,
                              &nmask);
     if(slen == 0) {
       fprintf(stderr, "\n\nSequence read failed (file must be Fasta, ");
@@ -349,7 +350,7 @@ int main(int argc, char *argv[]) {
     }
     rcom_seq(seq, rseq, useq, slen);
     if(quiet == 0) {
-      fprintf(stderr, "%d bp seq created, %.2f pct GC\n", slen, tinf.gc*100.0);
+      fprintf(stderr, "%d bp seq created, %.2f pct GC\n", slen, ptinf->gc*100.0);
     }
 
     /***********************************************************************
@@ -367,7 +368,7 @@ int main(int argc, char *argv[]) {
       }
       max_slen = slen;
     }
-    nn = add_nodes(seq, rseq, slen, nodes, closed, mlist, nmask, &tinf);
+    nn = add_nodes(seq, rseq, slen, nodes, closed, mlist, nmask, ptinf);
     qsort(nodes, nn, sizeof(struct _node), &compare_nodes);
     if(quiet == 0) {
       fprintf(stderr, "%d nodes\n", nn); 
@@ -386,10 +387,10 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "Malloc failed on gc frame plot\n\n");
       exit(11);
     }
-    record_gc_bias(gc_frame, nodes, nn, &tinf);
+    record_gc_bias(gc_frame, nodes, nn, ptinf);
     if(quiet == 0) {
-      fprintf(stderr, "frame bias scores: %.2f %.2f %.2f\n", tinf.bias[0],
-              tinf.bias[1], tinf.bias[2]); 
+      fprintf(stderr, "frame bias scores: %.2f %.2f %.2f\n", ptinf->bias[0],
+              ptinf->bias[1], ptinf->bias[2]); 
     }
     free(gc_frame);
 
@@ -401,8 +402,8 @@ int main(int argc, char *argv[]) {
     if(quiet == 0) {
       fprintf(stderr, "Building initial set of genes to train from...");
     }
-    record_overlapping_starts(nodes, nn, &tinf, 0);
-    ipath = dprog(nodes, nn, &tinf, 0);
+    record_overlapping_starts(nodes, nn, ptinf, 0);
+    ipath = dprog(nodes, nn, ptinf, 0);
     if(quiet == 0) {
       fprintf(stderr, "done!\n"); 
     }
@@ -414,8 +415,8 @@ int main(int argc, char *argv[]) {
     if(quiet == 0) {
       fprintf(stderr, "Creating coding model and scoring nodes...");
     }
-    calc_dicodon_gene(&tinf, seq, rseq, slen, nodes, ipath);
-    raw_coding_score(seq, rseq, slen, nodes, nn, &tinf);
+    calc_dicodon_gene(ptinf, seq, rseq, slen, nodes, ipath);
+    raw_coding_score(seq, rseq, slen, nodes, nn, ptinf);
     if(quiet == 0) {
       fprintf(stderr, "done!\n"); 
     }
@@ -427,11 +428,11 @@ int main(int argc, char *argv[]) {
     if(quiet == 0) {
       fprintf(stderr, "Examining upstream regions and training starts...");
     }
-    rbs_score(seq, rseq, slen, nodes, nn, &tinf);
-    train_starts_sd(seq, rseq, slen, nodes, nn, &tinf);
-    determine_sd_usage(&tinf);
-    if(force_nonsd == 1) tinf.uses_sd = 0;
-    if(tinf.uses_sd == 0) train_starts_nonsd(seq, rseq, slen, nodes, nn, &tinf);
+    rbs_score(seq, rseq, slen, nodes, nn, ptinf);
+    train_starts_sd(seq, rseq, slen, nodes, nn, ptinf);
+    determine_sd_usage(ptinf);
+    if(force_nonsd == 1) ptinf->uses_sd = 0;
+    if(ptinf->uses_sd == 0) train_starts_nonsd(seq, rseq, slen, nodes, nn, ptinf);
     if(quiet == 0) {
       fprintf(stderr, "done!\n"); 
     }
@@ -441,7 +442,7 @@ int main(int argc, char *argv[]) {
       if(quiet == 0) {
         fprintf(stderr, "Writing data to training file %s...", train_file);
       }
-      rv = write_training_file(train_file, &tinf);
+      rv = write_training_file(train_file, ptinf);
       if(rv != 0) { 
         fprintf(stderr, "\nError: could not write training file!\n"); 
         exit(12); 
@@ -522,37 +523,37 @@ int main(int argc, char *argv[]) {
         Find all the potential starts and stops, sort them, and create a 
         comprehensive list of nodes for dynamic programming.
       ***********************************************************************/
-      nn = add_nodes(seq, rseq, slen, nodes, closed, mlist, nmask, &tinf);
+      nn = add_nodes(seq, rseq, slen, nodes, closed, mlist, nmask, ptinf);
       qsort(nodes, nn, sizeof(struct _node), &compare_nodes);
 
       /***********************************************************************
         Second dynamic programming, using the dicodon statistics as the
         scoring function.                                
       ***********************************************************************/
-      score_nodes(seq, rseq, slen, nodes, nn, &tinf, closed, is_meta);
+      score_nodes(seq, rseq, slen, nodes, nn, ptinf, closed, is_meta);
       if(start_ptr != stdout) 
-        write_start_file(start_ptr, nodes, nn, &tinf, num_seq, slen, 0, NULL,
+        write_start_file(start_ptr, nodes, nn, ptinf, num_seq, slen, 0, NULL,
                          VERSION, cur_header);
-      record_overlapping_starts(nodes, nn, &tinf, 1);
-      ipath = dprog(nodes, nn, &tinf, 1);
-      eliminate_bad_genes(nodes, ipath, &tinf);
+      record_overlapping_starts(nodes, nn, ptinf, 1);
+      ipath = dprog(nodes, nn, ptinf, 1);
+      eliminate_bad_genes(nodes, ipath, ptinf);
       ng = add_genes(genes, nodes, ipath);
-      tweak_final_starts(genes, ng, nodes, nn, &tinf);
-      record_gene_data(genes, ng, nodes, &tinf, num_seq);
+      tweak_final_starts(genes, ng, nodes, nn, ptinf);
+      record_gene_data(genes, ng, nodes, ptinf, num_seq);
       if(quiet == 0) {
         fprintf(stderr, "done!\n"); 
       }
 
       /* Output the genes */
       print_genes(output_ptr, genes, ng, nodes, slen, output, num_seq, 0, NULL,
-                  &tinf, cur_header, short_header, VERSION);
+                  ptinf, cur_header, short_header, VERSION);
       fflush(output_ptr);
       if(trans_ptr != stdout)
         write_translations(trans_ptr, genes, ng, nodes, seq, rseq, useq, slen,
-                              &tinf, num_seq, short_header);
+                              ptinf, num_seq, short_header);
       if(nuc_ptr != stdout)
         write_nucleotide_seqs(nuc_ptr, genes, ng, nodes, seq, rseq, useq, slen,
-                              &tinf, num_seq, short_header);
+                              ptinf, num_seq, short_header);
     }
 
     else { /* Metagenomic Version */

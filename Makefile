@@ -46,7 +46,7 @@ table_baked.c table_baked.h: gc.prt maketable.sh
 	./maketable.sh < gc.prt
 
 # Too big to recompile on every header change
-training-baked.o: training-baked.c training.h training-baked.h
+training_baked.o: training_baked.c training.h training_baked.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 %.o: %.c $(HEADERS)

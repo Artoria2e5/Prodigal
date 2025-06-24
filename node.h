@@ -109,10 +109,10 @@ void train_starts_nonsd(unsigned char *, unsigned char *, int, struct _node *,
 void count_upstream_composition(unsigned char *, int, int, int, 
                                 struct _training *);
 
-void build_coverage_map(double [4][4][4096], int [4][4][4096], double, int);
+void build_coverage_map(double [4][NMOTIF], char [4][NMOTIF], double, int);
 void find_best_upstream_motif(struct _training *, unsigned char *, unsigned
                               char *, int, struct _node *, int);
-void update_motif_counts(double [4][4][4096], double *, unsigned char *,
+void update_motif_counts(double [4][NMOTIF], double *, unsigned char *,
                          unsigned char *, int, struct _node *, int);
 
 void write_start_file(FILE *, struct _node *, int, struct _training *, int,

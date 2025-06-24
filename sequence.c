@@ -421,16 +421,16 @@ void calc_mer_bg(int len, unsigned char *seq, unsigned char *rseq, int slen,
 
 int shine_dalgarno_exact(unsigned char *seq, int pos, int start, double *rwt) {
   int i, j, k, mism, rdis, limit, max_val, cur_val = 0;
-  double match[6], cur_ctr, dis_flag;
+  short match[6], cur_ctr, dis_flag;
 
   limit = imin(6, start-4-pos);
-  for(i = 0; i < 6; i++) match[i] = -10.0;
+  for(i = 0; i < 6; i++) match[i] = -10;
 
   /* Compare the 6-base region to AGGAGG */
   for(i = 0; i < limit; i++) {
     if(pos + i >= 0) {
-      if(i%3 == 0 && is_a(seq, pos+i) == 1) match[i] = 2.0;
-      else if(i%3 != 0 && is_g(seq, pos+i) == 1) match[i] = 3.0;
+      if(i%3 == 0 && is_a(seq, pos+i) == 1) match[i] = 2;
+      else if(i%3 != 0 && is_g(seq, pos+i) == 1) match[i] = 3;
     }
   }
 
@@ -438,11 +438,11 @@ int shine_dalgarno_exact(unsigned char *seq, int pos, int start, double *rwt) {
   max_val = 0;
   for(i = limit; i >= 3; i--) {
     for(j = 0; j <= limit-i; j++) {
-      cur_ctr = -2.0;
+      cur_ctr = -2;
       mism = 0;
       for(k = j; k < j+i; k++) {
         cur_ctr += match[k];
-        if(match[k] < 0.0) mism++;
+        if(match[k] < 0) mism++;
       }
       if(mism > 0) continue;
       rdis = start - (pos+j+i);
@@ -452,34 +452,34 @@ int shine_dalgarno_exact(unsigned char *seq, int pos, int start, double *rwt) {
       else if(rdis > 10 && rdis <= 12 && i >= 5) dis_flag = 2;
       else if(rdis >= 13) { dis_flag = 3; }
       else dis_flag = 0;
-      if(rdis > 15 || cur_ctr < 6.0) continue;
+      if(rdis > 15 || cur_ctr < 6) continue;
 
       /* Exact-Matching RBS Motifs */
-      if(cur_ctr < 6.0) cur_val = 0;
-      else if(cur_ctr == 6.0 && dis_flag == 2) cur_val = 1;
-      else if(cur_ctr == 6.0 && dis_flag == 3) cur_val = 2;
-      else if(cur_ctr == 8.0 && dis_flag == 3) cur_val = 3;
-      else if(cur_ctr == 9.0 && dis_flag == 3) cur_val = 3;
-      else if(cur_ctr == 6.0 && dis_flag == 1) cur_val = 6;
-      else if(cur_ctr == 11.0 && dis_flag == 3) cur_val = 10;
-      else if(cur_ctr == 12.0 && dis_flag == 3) cur_val = 10;
-      else if(cur_ctr == 14.0 && dis_flag == 3) cur_val = 10;
-      else if(cur_ctr == 8.0 && dis_flag == 2) cur_val = 11;
-      else if(cur_ctr == 9.0 && dis_flag == 2) cur_val = 11;
-      else if(cur_ctr == 8.0 && dis_flag == 1) cur_val = 12;
-      else if(cur_ctr == 9.0 && dis_flag == 1) cur_val = 12;
-      else if(cur_ctr == 6.0 && dis_flag == 0) cur_val = 13;
-      else if(cur_ctr == 8.0 && dis_flag == 0) cur_val = 15;
-      else if(cur_ctr == 9.0 && dis_flag == 0) cur_val = 16;
-      else if(cur_ctr == 11.0 && dis_flag == 2) cur_val = 20;
-      else if(cur_ctr == 11.0 && dis_flag == 1) cur_val = 21;
-      else if(cur_ctr == 11.0 && dis_flag == 0) cur_val = 22;
-      else if(cur_ctr == 12.0 && dis_flag == 2) cur_val = 20;
-      else if(cur_ctr == 12.0 && dis_flag == 1) cur_val = 23;
-      else if(cur_ctr == 12.0 && dis_flag == 0) cur_val = 24;
-      else if(cur_ctr == 14.0 && dis_flag == 2) cur_val = 25;
-      else if(cur_ctr == 14.0 && dis_flag == 1) cur_val = 26;
-      else if(cur_ctr == 14.0 && dis_flag == 0) cur_val = 27;
+      if(cur_ctr < 6) cur_val = 0;
+      else if(cur_ctr == 6 && dis_flag == 2) cur_val = 1;
+      else if(cur_ctr == 6 && dis_flag == 3) cur_val = 2;
+      else if(cur_ctr == 8 && dis_flag == 3) cur_val = 3;
+      else if(cur_ctr == 9 && dis_flag == 3) cur_val = 3;
+      else if(cur_ctr == 6 && dis_flag == 1) cur_val = 6;
+      else if(cur_ctr == 11 && dis_flag == 3) cur_val = 10;
+      else if(cur_ctr == 12 && dis_flag == 3) cur_val = 10;
+      else if(cur_ctr == 14 && dis_flag == 3) cur_val = 10;
+      else if(cur_ctr == 8 && dis_flag == 2) cur_val = 11;
+      else if(cur_ctr == 9 && dis_flag == 2) cur_val = 11;
+      else if(cur_ctr == 8 && dis_flag == 1) cur_val = 12;
+      else if(cur_ctr == 9 && dis_flag == 1) cur_val = 12;
+      else if(cur_ctr == 6 && dis_flag == 0) cur_val = 13;
+      else if(cur_ctr == 8 && dis_flag == 0) cur_val = 15;
+      else if(cur_ctr == 9 && dis_flag == 0) cur_val = 16;
+      else if(cur_ctr == 11 && dis_flag == 2) cur_val = 20;
+      else if(cur_ctr == 11 && dis_flag == 1) cur_val = 21;
+      else if(cur_ctr == 11 && dis_flag == 0) cur_val = 22;
+      else if(cur_ctr == 12 && dis_flag == 2) cur_val = 20;
+      else if(cur_ctr == 12 && dis_flag == 1) cur_val = 23;
+      else if(cur_ctr == 12 && dis_flag == 0) cur_val = 24;
+      else if(cur_ctr == 14 && dis_flag == 2) cur_val = 25;
+      else if(cur_ctr == 14 && dis_flag == 1) cur_val = 26;
+      else if(cur_ctr == 14 && dis_flag == 0) cur_val = 27;
 
       if(rwt[cur_val] < rwt[max_val]) continue;
       if(rwt[cur_val] == rwt[max_val] && cur_val < max_val) continue;
@@ -497,21 +497,21 @@ int shine_dalgarno_exact(unsigned char *seq, int pos, int start, double *rwt) {
 
 int shine_dalgarno_mm(unsigned char *seq, int pos, int start, double *rwt) {
   int i, j, k, mism, rdis, limit, max_val, cur_val = 0;
-  double match[6], cur_ctr, dis_flag;
+  short match[6], cur_ctr, dis_flag;
 
   limit = imin(6, start-4-pos);
-  for(i = 0; i < 6; i++) match[i] = -10.0;
+  for(i = 0; i < 6; i++) match[i] = -10;
 
   /* Compare the 6-base region to AGGAGG */
   for(i = 0; i < limit; i++) {
     if(pos+i >= 0) {
       if(i % 3 == 0) {
-        if(is_a(seq, pos+i) == 1) match[i] = 2.0;
-        else match[i] = -3.0;
+        if(is_a(seq, pos+i) == 1) match[i] = 2;
+        else match[i] = -3;
       }
       else {
-        if(is_g(seq, pos+i) == 1) match[i] = 3.0;
-        else match[i] = -2.0;
+        if(is_g(seq, pos+i) == 1) match[i] = 3;
+        else match[i] = -2;
       }
     }
   }
@@ -520,12 +520,12 @@ int shine_dalgarno_mm(unsigned char *seq, int pos, int start, double *rwt) {
   max_val = 0;
   for(i = limit; i >= 5; i--) {
     for(j = 0; j <= limit-i; j++) {
-      cur_ctr = -2.0;
+      cur_ctr = -2;
       mism = 0;
       for(k = j; k < j+i; k++) {
         cur_ctr += match[k];
-        if(match[k] < 0.0) mism++;
-        if(match[k] < 0.0 && (k <= j+1 || k >= j+i-2)) cur_ctr -= 10.0;
+        if(match[k] < 0) mism++;
+        if(match[k] < 0 && (k <= j+1 || k >= j+i-2)) cur_ctr -= 10;
       }
       if(mism != 1) continue;
       rdis = start - (pos+j+i);
@@ -533,22 +533,22 @@ int shine_dalgarno_mm(unsigned char *seq, int pos, int start, double *rwt) {
       else if(rdis > 10 && rdis <= 12) { dis_flag = 2; }
       else if(rdis >= 13) { dis_flag = 3; }
       else dis_flag = 0;
-      if(rdis > 15 || cur_ctr < 6.0) continue;
+      if(rdis > 15 || cur_ctr < 6) continue;
 
       /* Single-Mismatch RBS Motifs */
-      if(cur_ctr < 6.0) cur_val = 0;
-      else if(cur_ctr == 6.0 && dis_flag == 3) cur_val = 2;
-      else if(cur_ctr == 7.0 && dis_flag == 3) cur_val = 2;
-      else if(cur_ctr == 9.0 && dis_flag == 3) cur_val = 3;
-      else if(cur_ctr == 6.0 && dis_flag == 2) cur_val = 4;
-      else if(cur_ctr == 6.0 && dis_flag == 1) cur_val = 5;
-      else if(cur_ctr == 6.0 && dis_flag == 0) cur_val = 9;
-      else if(cur_ctr == 7.0 && dis_flag == 2) cur_val = 7;
-      else if(cur_ctr == 7.0 && dis_flag == 1) cur_val = 8;
-      else if(cur_ctr == 7.0 && dis_flag == 0) cur_val = 14;
-      else if(cur_ctr == 9.0 && dis_flag == 2) cur_val = 17;
-      else if(cur_ctr == 9.0 && dis_flag == 1) cur_val = 18;
-      else if(cur_ctr == 9.0 && dis_flag == 0) cur_val = 19;
+      if(cur_ctr < 6) cur_val = 0;
+      else if(cur_ctr == 6 && dis_flag == 3) cur_val = 2;
+      else if(cur_ctr == 7 && dis_flag == 3) cur_val = 2;
+      else if(cur_ctr == 9 && dis_flag == 3) cur_val = 3;
+      else if(cur_ctr == 6 && dis_flag == 2) cur_val = 4;
+      else if(cur_ctr == 6 && dis_flag == 1) cur_val = 5;
+      else if(cur_ctr == 6 && dis_flag == 0) cur_val = 9;
+      else if(cur_ctr == 7 && dis_flag == 2) cur_val = 7;
+      else if(cur_ctr == 7 && dis_flag == 1) cur_val = 8;
+      else if(cur_ctr == 7 && dis_flag == 0) cur_val = 14;
+      else if(cur_ctr == 9 && dis_flag == 2) cur_val = 17;
+      else if(cur_ctr == 9 && dis_flag == 1) cur_val = 18;
+      else if(cur_ctr == 9 && dis_flag == 0) cur_val = 19;
 
       if(rwt[cur_val] < rwt[max_val]) continue;
       if(rwt[cur_val] == rwt[max_val] && cur_val < max_val) continue;

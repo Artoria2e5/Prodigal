@@ -472,8 +472,8 @@ void score_nodes(unsigned char *seq, unsigned char *rseq, int slen,
 
     /* Penalize non-edge genes < 250bp */
     if(edge_gene == 0 && abs(nod[i].ndx-nod[i].stop_val) < 250) {
-      negf = 250.0/(float)abs(nod[i].ndx-nod[i].stop_val);
-      posf = (float)abs(nod[i].ndx-nod[i].stop_val)/250.0;
+      negf = 250.0/(double)abs(nod[i].ndx-nod[i].stop_val);
+      posf = (double)abs(nod[i].ndx-nod[i].stop_val)/250.0;
       if(nod[i].rscore < 0) nod[i].rscore *= negf; 
       if(nod[i].uscore < 0) nod[i].uscore *= negf; 
       if(nod[i].tscore < 0) nod[i].tscore *= negf; 
@@ -539,7 +539,7 @@ void calc_orf_gc(unsigned char *seq, unsigned char *rseq, int slen, struct
     else if(nod[i].strand == 1) {
       for(j = last[fr]-3; j >= nod[i].ndx; j-=3)
         gc[fr] += is_gc(seq, j) + is_gc(seq, j+1) + is_gc(seq, j+2);
-      gsize = (float)(abs(nod[i].stop_val-nod[i].ndx)+3.0);
+      gsize = (double)(abs(nod[i].stop_val-nod[i].ndx)+3.0);
       nod[i].gc_cont = gc[fr]/gsize;
       last[fr] = nod[i].ndx;
     }
@@ -555,7 +555,7 @@ void calc_orf_gc(unsigned char *seq, unsigned char *rseq, int slen, struct
     else if(nod[i].strand == -1) {
       for(j = last[fr]+3; j <= nod[i].ndx; j+=3)
         gc[fr] += is_gc(seq, j) + is_gc(seq, j+1) + is_gc(seq, j+2);
-      gsize = (float)(abs(nod[i].stop_val-nod[i].ndx)+3.0);
+      gsize = (double)(abs(nod[i].stop_val-nod[i].ndx)+3.0);
       nod[i].gc_cont = gc[fr]/gsize;
       last[fr] = nod[i].ndx;
     }
@@ -641,7 +641,7 @@ void raw_coding_score(unsigned char *seq, unsigned char *rseq, int slen, struct
     fr = (nod[i].ndx)%3;
     if(nod[i].strand == 1 && nod[i].type == STOP) score[fr] = -10000.0;
     else if(nod[i].strand == 1) {
-      gsize = ((float)(abs(nod[i].stop_val-nod[i].ndx)+3.0))/3.0;
+      gsize = ((double)(abs(nod[i].stop_val-nod[i].ndx)+3.0))/3.0;
       if(gsize > 1000.0) {
         lfac = log((1-pow(no_stop, 1000.0))/pow(no_stop, 1000.0));
         lfac -= log((1-pow(no_stop, 80))/pow(no_stop, 80));
@@ -661,7 +661,7 @@ void raw_coding_score(unsigned char *seq, unsigned char *rseq, int slen, struct
     fr = (nod[i].ndx)%3;
     if(nod[i].strand == -1 && nod[i].type == STOP) score[fr] = -10000.0;
     else if(nod[i].strand == -1) {
-      gsize = ((float)(abs(nod[i].stop_val-nod[i].ndx)+3.0))/3.0;
+      gsize = ((double)(abs(nod[i].stop_val-nod[i].ndx)+3.0))/3.0;
       if(gsize > 1000.0) {
         lfac = log((1-pow(no_stop, 1000.0))/pow(no_stop, 1000.0));
         lfac -= log((1-pow(no_stop, 80))/pow(no_stop, 80));
@@ -939,10 +939,11 @@ exit(0); */
 *******************************************************************************/
 void train_starts_nonsd(unsigned char *seq, unsigned char *rseq, int slen,
                   struct _node *nod, int nn, struct _training *tinf) {
-  int i, j, k, l, fr, bndx[3], mgood[4][4][4096], stage;
+  int i, j, k, l, fr, bndx[3], stage;
+  char mgood[4][NMOTIF];
   double sum, ngenes, wt = tinf->st_wt, best[3], sthresh = 35.0;
   double tbg[3], treal[3];
-  double mbg[4][4][4096], mreal[4][4][4096], zbg, zreal;
+  double mbg[4][NMOTIF], mreal[4][NMOTIF], zbg, zreal;
 
   for(i = 0; i < 32; i++) for(j = 0; j < 4; j++) tinf->ups_comp[i][j] = 0.0;
 
@@ -969,8 +970,8 @@ void train_starts_nonsd(unsigned char *seq, unsigned char *rseq, int slen,
     else stage = 2;
 
     /* Recalculate the upstream motif background and set 'real' counts to 0 */
-    for(j = 0; j < 4; j++) for(k = 0; k < 4; k++) for(l = 0; l < 4096; l++)
-      mbg[j][k][l] = 0.0;
+    for(k = 0; k < 4; k++) for(l = 0; l < NMOTIF; l++)
+      mbg[k][l] = 0.0;
     zbg = 0.0;
     for(j = 0; j < nn; j++) {
       if(nod[j].type == STOP || nod[j].edge == 1) continue;
@@ -978,16 +979,16 @@ void train_starts_nonsd(unsigned char *seq, unsigned char *rseq, int slen,
       update_motif_counts(mbg, &zbg, seq, rseq, slen, &(nod[j]), stage);
     }
     sum = 0.0;
-    for(j = 0; j < 4; j++) for(k = 0; k < 4; k++) for(l = 0; l < 4096; l++)
-      sum += mbg[j][k][l];
+    for(k = 0; k < 4; k++) for(l = 0; l < NMOTIF; l++)
+      sum += mbg[k][l];
     sum += zbg;
-    for(j = 0; j < 4; j++) for(k = 0; k < 4; k++) for(l = 0; l < 4096; l++)
-      mbg[j][k][l] /= sum;
+    for(k = 0; k < 4; k++) for(l = 0; l < NMOTIF; l++)
+      mbg[k][l] /= sum;
     zbg /= sum;
 
     /* Reset counts of 'real' motifs/types to 0 */
-    for(j = 0; j < 4; j++) for(k = 0; k < 4; k++) for(l = 0; l < 4096; l++)
-      mreal[j][k][l] = 0.0;
+    for(k = 0; k < 4; k++) for(l = 0; l < NMOTIF; l++)
+      mreal[k][l] = 0.0;
     zreal = 0.0;
     for(j = 0; j < 3; j++) treal[j] = 0.0;
     ngenes = 0.0;
@@ -1047,29 +1048,29 @@ void train_starts_nonsd(unsigned char *seq, unsigned char *rseq, int slen,
     /* Update the log likelihood weights for type and RBS motifs */
     if(stage < 2) build_coverage_map(mreal, mgood, ngenes, stage);
     sum = 0.0;
-    for(j = 0; j < 4; j++) for(k = 0; k < 4; k++) for(l = 0; l < 4096; l++)
-      sum += mreal[j][k][l];
+    for(k = 0; k < 4; k++) for(l = 0; l < NMOTIF; l++)
+      sum += mreal[k][l];
     sum += zreal;
     if(sum == 0.0) {
-      for(j = 0; j < 4; j++) for(k = 0; k < 4; k++) for(l = 0; l < 4096; l++)
-        tinf->mot_wt[j][k][l] = 0.0;
+      for(k = 0; k < 4; k++) for(l = 0; l < NMOTIF; l++)
+        tinf->mot_wt[k][l] = 0.0;
       tinf->no_mot = 0.0;
     }
     else {
       for(j = 0; j < 4; j++) for(k = 0; k < 4; k++)
       for(l = 0; l < 4096; l++) {{{
-        if(mgood[j][k][l] == 0) {
-          zreal += mreal[j][k][l];
-          zbg += mreal[j][k][l];
-          mreal[j][k][l] = 0.0;
-          mbg[j][k][l] = 0.0;
+        if(mgood[k][l] == 0) {
+          zreal += mreal[k][l];
+          zbg += mreal[k][l];
+          mreal[k][l] = 0.0;
+          mbg[k][l] = 0.0;
         }
-        mreal[j][k][l] /= sum;
-        if(mbg[j][k][l] != 0)
-          tinf->mot_wt[j][k][l] = log(mreal[j][k][l]/mbg[j][k][l]);
-        else tinf->mot_wt[j][k][l] = -4.0;
-        if(tinf->mot_wt[j][k][l] > 4.0) tinf->mot_wt[j][k][l] = 4.0;
-        if(tinf->mot_wt[j][k][l] < -4.0) tinf->mot_wt[j][k][l] = -4.0;
+        mreal[k][l] /= sum;
+        if(mbg[k][l] != 0)
+          tinf->mot_wt[k][l] = log(mreal[k][l]/mbg[k][l]);
+        else tinf->mot_wt[k][l] = -4.0;
+        if(tinf->mot_wt[k][l] > 4.0) tinf->mot_wt[k][l] = 4.0;
+        if(tinf->mot_wt[k][l] < -4.0) tinf->mot_wt[k][l] = -4.0;
       }}}
     }
     zreal /= sum;
@@ -1213,7 +1214,7 @@ void find_best_upstream_motif(struct _training *tinf, unsigned char *seq,
       else if(j >= start-7-i) spacendx = 1;
       else spacendx = 0;
       index = nucmer(i+3, wseq, j);
-      score = tinf->mot_wt[i][spacendx][index];
+      score = tinf->mot_wt[spacendx][mot_idx_v0_to_v1(i, index)];
       if(score > max_sc) {
         max_sc = score;
         max_spacendx = spacendx;
@@ -1247,7 +1248,7 @@ void find_best_upstream_motif(struct _training *tinf, unsigned char *seq,
   counted (e.g. for AGGAG, we would count AGGAG, AGGA, GGAG, AGG, GGA, and
   GAG).  In stage 2, only the best single motif is counted.
 *******************************************************************************/
-void update_motif_counts(double mcnt[4][4][4096], double *zero, unsigned char
+void update_motif_counts(double mcnt[4][NMOTIF], double *zero, unsigned char
                          *seq, unsigned char *rseq, int slen, struct _node *nod,
                          int stage) {
   int i, j, k, start, spacendx;
@@ -1272,14 +1273,15 @@ void update_motif_counts(double mcnt[4][4][4096], double *zero, unsigned char
         else if(j <= start-14-i) spacendx = 2;
         else if(j >= start-7-i) spacendx = 1;
         else spacendx = 0;
-        for(k = 0; k < 4; k++) mcnt[i][k][nucmer(i+3, wseq, j)] += 1.0;
+        for(k = 0; k < 4; k++)
+          mcnt[k][mot_idx_v0_to_v1(i, nucmer(i+3, wseq, j))] += 1.0;
       }
     }
   }
   /* Stage 1:  Count only the best motif, but also count  */
   /* all its sub-motifs.                                  */
   else if(stage == 1) {
-    mcnt[mot->len-3][mot->spacendx][mot->ndx] += 1.0;
+    mcnt[mot->spacendx][mot_idx_v0_to_v1(mot->len-3,mot->ndx)] += 1.0;
     for(i = 0; i < mot->len-3; i++) {
       for(j = start-(mot->spacer)-(mot->len); j <= start-(mot->spacer)-(i+3);
           j++) {
@@ -1288,12 +1290,13 @@ void update_motif_counts(double mcnt[4][4][4096], double *zero, unsigned char
         else if(j <= start-14-i) spacendx = 2;
         else if(j >= start-7-i) spacendx = 1;
         else spacendx = 0;
-        mcnt[i][spacendx][nucmer(i+3, wseq, j)] += 1.0;
+        mcnt[spacendx][mot_idx_v0_to_v1(i, nucmer(i+3, wseq, j))] += 1.0;
       }
     }
   }
   /* Stage 2:  Only count the highest scoring motif. */
-  else if(stage == 2) mcnt[mot->len-3][mot->spacendx][mot->ndx] += 1.0;
+  else if(stage == 2)
+    mcnt[mot->spacendx][mot_idx_v0_to_v1(mot->len-3,mot->ndx)] += 1.0;
 }
 
 /*******************************************************************************
@@ -1306,25 +1309,25 @@ void update_motif_counts(double mcnt[4][4][4096], double *zero, unsigned char
   training, all motifs are labeled good.  0 = bad, 1 = good, 2 = good
   w/mismatch.
 *******************************************************************************/
-void build_coverage_map(double real[4][4][4096], int good[4][4][4096], double
+void build_coverage_map(double real[4][NMOTIF], char good[4][NMOTIF], double
                         ng, int stage) {
   int i, j, k, l, tmp, decomp[3];
   double thresh = 0.2;
 
-  for(i = 0; i < 4; i++) for(j = 0; j < 4; j++) for(k = 0; k < 4096; k++)
-    good[i][j][k] = 0;
+  for(j = 0; j < 4; j++) for(k = 0; k < NMOTIF; k++)
+    good[j][k] = 0;
 
   /* 3-base motifs */
   for(i = 0; i < 4; i++) for(j = 0; j < 64; j++) {
-    if(real[0][i][j]/ng >= thresh) { for(k = 0; k < 4; k++) good[0][k][j] = 1; }
+    if(real[i][j]/ng >= thresh) { for(k = 0; k < 4; k++) good[k][j] = 1; }
   }
 
   /* 4-base motifs, must contain two valid 3-base motifs */
   for(i = 0; i < 4; i++) for(j = 0; j < 256; j++) {
     decomp[0] = (j&252)>>2;
     decomp[1] = j&63;
-    if(good[0][i][decomp[0]] == 0 || good[0][i][decomp[1]] == 0) continue;
-    good[1][i][j] = 1;
+    if(good[i][64+decomp[0]] == 0 || good[i][64+decomp[1]] == 0) continue;
+    good[i][64+j] = 1;
   }
 
   /* 5-base motifs, interior mismatch allowed only if entire 5-base */
@@ -1333,16 +1336,16 @@ void build_coverage_map(double real[4][4][4096], int good[4][4][4096], double
     decomp[0] = (j&1008)>>4;
     decomp[1] = (j&252)>>2;
     decomp[2] = j&63;
-    if(good[0][i][decomp[0]] == 0 || good[0][i][decomp[1]] == 0 ||
-       good[0][i][decomp[2]] == 0)
+    if(good[i][decomp[0]] == 0 || good[i][decomp[1]] == 0 ||
+       good[i][decomp[2]] == 0)
       continue;
-    good[2][i][j] = 1;
+    good[i][64+256+j] = 1;
     tmp = j;
     for(k = 0; k <= 16; k+= 16) {
       tmp = tmp ^ k;
       for(l = 0; l <= 32; l+= 32) {
         tmp = tmp ^ l;
-        if(good[2][i][tmp] == 0) good[2][i][tmp] = 2;
+        if(good[i][64+256+tmp] == 0) good[i][64+256+tmp] = 2;
       }
     }
   }
@@ -1351,15 +1354,15 @@ void build_coverage_map(double real[4][4][4096], int good[4][4][4096], double
   for(i = 0; i < 4; i++) for(j = 0; j < 4096; j++) {
     decomp[0] = (j&4092)>>2;
     decomp[1] = j&1023;
-    if(good[2][i][decomp[0]] == 0 || good[2][i][decomp[1]] == 0) continue;
-    if(good[2][i][decomp[0]] == 1 && good[2][i][decomp[1]] == 1)
-      good[3][i][j] = 1;
-    else good[3][i][j] = 2;
+    if(good[i][64+256+decomp[0]] == 0 || good[i][64+256+decomp[1]] == 0) continue;
+    if(good[i][64+256+decomp[0]] == 1 && good[i][64+256+decomp[1]] == 1)
+      good[i][64+256+1024+j] = 1;
+    else good[i][64+256+1024+j] = 2;
   }
 
 /* output all good motifs, useful info, keeping it in
 printf("GOOD MOTIFS\n");
-for(i = 0; i < 4; i++) for(j = 0; j < 4; j++) for(k = 0; k < 4096; k++) {
+for(j = 0; j < 4; j++) for(k = 0; k < NMOTIF; k++) {
   if(good[i][j][k] == 0) continue;
   mer_text(qt, i+3, k);
   printf("motif %s %d %d %d is good\n", qt, i+3, j, k);

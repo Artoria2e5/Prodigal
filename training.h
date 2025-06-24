@@ -26,17 +26,17 @@
 #include <string.h>
 #include <stdint.h>
 
-/* FIXME: This is a giant 558,392 B struct which is awful for locality.
-   There is no squeezing it in a 32 KB L1D cache anyways though.
+/* FIXME: This is a 208,240 B struct which is awful for locality.
+   There is no squeezing it in a 32 KB L1D cache, but now that it's in
+   L2 we've saved a lot of L3 miss cycles (about 20!).
    
-   The log prob weights are not very sensitive to precision AND has a
-   guaranteed range limit, so turning them into Fixed16 should be fine.
-   Same for GC%. Assuming we do that with bias (always sums to 3 and non-neg?)
-   too we get 139,662 B.
-
-   mot_wt can be changed to a [4][4096 + 1024 + 256 + 64], bringing us
-   down to 52,110 B... Huh, worth a try some day!
+   Possible further shaves:
+    float    -> 104,152B
+    fixed16  -> 52,110B   (our uses here are not very sensitive to precision
+                           and have a guaranteed range limit: log prob weights,
+                           GC%, nonnegative bias summing to 3, etc.)
    */
+#define NMOTIF (64 + 256 + 1024 + 4096)
 struct _training
 {
   uint8_t version;           /* Future-proofing, now = 1 (nucmer, table) */
@@ -53,13 +53,13 @@ struct _training
                                 motifs.  0-1 are the -1/-2 position, 2-31 are
                                 the -15 to -44 positions.  Second array is
                                 the base A,C,T,G,etc. */
-  double mot_wt[4][4][4096]; /* Weights for upstream motifs.  First index is
-                                the motif length (3-6), the second is the
-                                spacer distance (0 = 5-10bp, 1 = 3-4bp, 2 =
+  double mot_wt[4][NMOTIF];  /* Weights for upstream motifs.  First index is
+                                the spacer distance (0 = 5-10bp, 1 = 3-4bp, 2 =
                                 11-12bp, 3 = 13-15bp), and the last is the
-                                numerical value of the motif (ranging from 0
-                                to 4095 for 6-mers, less for shorter
-                                motifs) */
+                                numerical value of the motif plus a length-
+                                dependent offset (0-63 for 3-mer, 64-319
+                                for 4-mer, 320-1344 for 5-mer, 1345-5439
+                                for 6-mer). */
   double no_mot;             /* Weight for the case of no motif */
   double gene_dc[4096];      /* Coding statistics for the genome */
 };
@@ -74,15 +74,31 @@ struct _training_v0 {
   int uses_sd;
   double rbs_wt[28];
   double ups_comp[32][4];
-  double mot_wt[4][4][4096];
+  double mot_wt[4][4][4096]; /* Old style weights for upstream motifs.
+                                First index is length+3
+                                Second is spacer
+                                Third is numeric value of motif */
   double no_mot;
   double gene_dc[4096];
 };
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MAX_TRAINING_SIZE MAX(sizeof(struct _training), sizeof(struct _training_v0))
+#define MAX_TRAINING_SIZE MAX(sizeof(struct _training), \
+                              sizeof(struct _training_v0))
 
-void meta_to_v1(struct _training *);
+/* convert mot_wt[n][x][idx] to mot_wt[x][i] and back;
+  n \in [0..3], idx \in [0..4095], i \in [0..5439] */
+inline static uint16_t mot_idx_v0_to_v1(uint16_t n, uint16_t idx) {
+  uint16_t mot_wt_02[] = {0, 64, 320, 1344};
+  return mot_wt_02[n] + idx;
+}
+inline static uint32_t mot_idx_v1_to_v0(uint16_t i) {
+  uint16_t mot_wt_02[] = {0, 64, 320, 1344};
+  uint16_t n = (i >= 64) + (i >= 320) + (i >= 1344);
+  return (n << 16) | (i - mot_wt_02[n]);
+}
+
+/* Convert in situ knowing that the new struct is smaller */
 void v0_to_v1(struct _training_v0 *old);
 int write_training_file(char *, const struct _training *);
 int read_training_file(char *, struct _training *);
