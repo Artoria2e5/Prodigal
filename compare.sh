@@ -14,7 +14,7 @@ OUT_PREFIX="test/$(basename "$INPUT_FILE")"
 shift 2
 
 if ! command -v "$OLD_BINARY" >/dev/null; then
-    echo "Error: Old binary '$OLD_BINARY' is not executable."
+    echo "Error: Old binary '$OLD_BINARY' is not executable. Did you forget a './' prefix?"
     exit 1
 fi
 if [[ ! -f $INPUT_FILE ]]; then
